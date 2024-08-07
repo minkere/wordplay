@@ -25,7 +25,7 @@ import type Locales from './Locales';
 import type { GalleryTexts } from './GalleryTexts';
 
 /** A list of locales that are in progress but not supported yet. Only added when developing locally. */
-export const EventuallySupportedLocales = ['zh-TW'];
+export const EventuallySupportedLocales = ['zh-TW', 'de-DE'];
 
 /** A list of locales officially supported by Wordplay. */
 export const SupportedLocales = Array.from(
@@ -39,6 +39,11 @@ export const SupportedLocales = Array.from(
 
 /** One of the supported locales above */
 export type SupportedLocale = (typeof SupportedLocales)[number];
+
+/** Placeholders in the locale template language */
+export const Unwritten = '$?';
+export const Outdated = '$!';
+export const MachineTranslated = '$~';
 
 /**
  * Represents a complete translation for Wordplay,
@@ -115,7 +120,7 @@ export type NameText = string | string[];
 export type DocText = string | string[];
 
 export function toDocString(doc: DocText) {
-    return Array.isArray(doc) ? doc.join('\n\n') : doc;
+    return withoutAnnotations(Array.isArray(doc) ? doc.join('\n\n') : doc);
 }
 
 export function parseLocaleDoc(doc: string) {
@@ -130,8 +135,24 @@ export function getFirstName(name: NameText) {
     return typeof name === 'string' ? name : name[0];
 }
 
-export function nameWithoutMentions(name: string) {
-    return name.replaceAll('$?', '').replaceAll('$!', '').trim();
+export function withoutAnnotations(name: string) {
+    return name
+        .replaceAll(Unwritten, '')
+        .replaceAll(Outdated, '')
+        .replaceAll(MachineTranslated, '')
+        .trim();
+}
+
+export function isUnwritten(text: string) {
+    return text.startsWith(Unwritten);
+}
+
+export function isOutdated(text: string) {
+    return text.startsWith(Outdated);
+}
+
+export function isAutomated(text: string) {
+    return text.startsWith(MachineTranslated);
 }
 
 export function toLocaleString(locale: Locale) {
