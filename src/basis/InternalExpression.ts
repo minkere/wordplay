@@ -9,7 +9,6 @@ import StartFinish from '@runtime/StartFinish';
 import SimpleExpression from '@nodes/SimpleExpression';
 import InternalException from '@values/InternalException';
 import Glyphs from '../lore/Glyphs';
-import concretize from '../locale/concretize';
 import Purpose from '../concepts/Purpose';
 import Start from '@runtime/Start';
 import Finish from '@runtime/Finish';
@@ -66,6 +65,10 @@ export default class InternalExpression extends SimpleExpression {
         return false;
     }
 
+    isInternal() {
+        return true;
+    }
+
     compile(): Step[] {
         return this.steps.length === 0
             ? [new StartFinish(this)]
@@ -105,10 +108,7 @@ export default class InternalExpression extends SimpleExpression {
     }
 
     getStartExplanations(locales: Locales) {
-        return concretize(
-            locales,
-            locales.get((l) => l.node.InternalExpression.start),
-        );
+        return locales.concretize((l) => l.node.InternalExpression.start);
     }
 
     getGlyphs() {

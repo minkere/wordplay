@@ -20,7 +20,7 @@
     import type Project from '../../../models/Project';
     import ProjectPreviewSet from '@components/app/ProjectPreviewSet.svelte';
     import AddProject from '@components/app/AddProject.svelte';
-    import { EDIT_SYMBOL } from '../../../parser/Symbols';
+    import { COPY_SYMBOL, EDIT_SYMBOL } from '../../../parser/Symbols';
     import Spinning from '@components/app/Spinning.svelte';
 
     const user = getUser();
@@ -57,6 +57,8 @@
     $: editable = gallery
         ? $user !== null && gallery.getCurators().includes($user.uid)
         : false;
+    $: addable =
+        gallery && $user ? gallery.getCreators().includes($user.uid) : false;
 
     // Anytime the gallery changes, refresh the project list.
     $: if (gallery) loadProjects();
@@ -136,11 +138,15 @@
                     />
                 {/if}
 
-                {#if editable}
+                {#if editable || addable}
                     <AddProject
                         add={(template) => {
                             if (gallery) {
-                                const newProjectID = Projects.copy(template);
+                                const newProjectID = Projects.copy(
+                                    template,
+                                    $user?.uid ?? null,
+                                    gallery.getID(),
+                                );
                                 Galleries.edit(
                                     gallery.withProject(newProjectID),
                                 );
@@ -164,6 +170,16 @@
                                   label: EDIT_SYMBOL,
                               }
                             : false}
+                        copy={{
+                            description: $locales.get(
+                                (l) => l.ui.project.button.duplicate,
+                            ),
+                            action: (project) =>
+                                goto(
+                                    Projects.duplicate(project).getLink(false),
+                                ),
+                            label: COPY_SYMBOL,
+                        }}
                         remove={(project) => {
                             return editable
                                 ? {
@@ -179,8 +195,11 @@
                                       ),
                                       action: () =>
                                           gallery
-                                              ? Galleries.removeProject(project)
-                                              : undefined,
+                                              ? Galleries.removeProject(
+                                                    project,
+                                                    gallery.getID(),
+                                                )
+                                              : false,
                                       label: '⨉',
                                   }
                                 : false;

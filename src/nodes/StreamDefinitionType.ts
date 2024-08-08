@@ -43,7 +43,7 @@ export default class StreamDefinitionType extends Type {
     }
 
     getBasisTypeName(): BasisTypeName {
-        return 'function';
+        return 'streamdefinition';
     }
 
     clone() {

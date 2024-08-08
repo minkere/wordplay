@@ -1,5 +1,5 @@
 {
-    "$schema": "../../static/schemas/Locale.json",
+    "$schema": "../../static/schemas/LocaleText.json",
     "language": "en",
     "region": "US",
     "wordplay": "Wordplay",
@@ -41,7 +41,7 @@
         "row": "row",
         "set": "set",
         "key": "key",
-        "help": "help",
+        "help": "Help",
         "feedback": "feedback"
     },
     "token": {
@@ -424,7 +424,7 @@
                 "MissingShareLanguages": "if you want to share this, you have to say what language this is in, so others know if they can read it!",
                 "RequiredAfterOptional": "I can't be here, there's an optional @Bind before me",
                 "UnexpectedEtc": "I can only be variable length in a @FunctionDefinition",
-                "UnusedBind": "I named $1, but no one is using it. Maybe it's not needed?"
+                "UnusedBind": "I'm named $1, but no one is using me. Maybe I'm not needed?"
             }
         },
         "Block": {
@@ -452,8 +452,9 @@
             "conflict": {
                 "ExpectedEndingExpression": "I need an expression.",
                 "IgnoredExpression": {
-                    "primary": "I'm going to ignore the above.",
-                    "secondary": "@Block, don't ignore me!"
+                    "primary": "I'm going to ignore $1, since it doesn't define anything and isn't my last expression.",
+                    "secondary": "@Block, don't ignore me!",
+                    "resolution": "Did you mean for this to be a @BinaryEvaluate instead of a @UnaryEvaluate? I can add a space, so I know that's what you meant."
                 }
             }
         },
@@ -610,10 +611,9 @@
                     "primary": "I wasn't expecting this type input",
                     "secondary": "oh, am I not supposed to be here?"
                 },
-                "MisplacedInput": "this input is out of order.",
                 "MissingInput": {
-                    "primary": "I'm missing $1, can you add it?",
-                    "secondary": "this input is required, but $1 didn't provide it"
+                    "primary": "I can't evaluate $1 without the input named $2 :(",
+                    "secondary": "Can you help us out and add it the list of inputs?"
                 },
                 "NotInstantiable": "I can't make this @StructureDefinition, it has unimplemented functions.",
                 "UnexpectedInput": {
@@ -621,10 +621,11 @@
                     "secondary": "Oh, am I not supposed to be here?"
                 },
                 "UnknownInput": {
-                    "primary": "I don't know of an input by this name",
-                    "secondary": "I don't think I belong here"
+                    "primary": "I don't know of an input by this name in $1",
+                    "secondary": "I don't have an input with the name $1"
                 },
-                "InputListMustBeLast": "list of inputs must be last"
+                "InputListMustBeLast": "list of inputs must be last",
+                "SeparatedEvaluate": "Is $1 the name of a $2[$structure|$function] you're trying to evaluate? Try removing the space after me, so I know it's an @Evaluate and not a separate @Block."
             },
             "exception": {
                 "FunctionException": {
@@ -632,6 +633,18 @@
                     "explanation": "oh no, $1 isn't a function in $2[$2|this @Block]!"
                 }
             }
+        },
+        "Input": {
+            "name": "Input",
+            "description": "named input",
+            "emotion": "serious",
+            "doc": [
+                "I'm an input given to an @Evaluate. My name corresponds to the name of input in the @FunctionDefinition or @StructureDefinition being evaluated.",
+                "I'm helpful with functions that have many default values, where you just want to override a specific input, without giving everything else.",
+                "For example, @Phrase has many, many default values to control it's style. Let's say you wanted to give some @Text and a @Color, but nothing else in its input list. You can use me to do that:",
+                "\\Phrase('I am purple!' color: Color(50% 52 300°))\\"
+            ],
+            "start": "Let's evaluate my value."
         },
         "ExpressionPlaceholder": {
             "name": "placeholder",
@@ -1050,6 +1063,14 @@
                 "UnimplementedInterface": "I implement $1 but haven't implemented $2"
             }
         },
+        "StructureDefinitionType": {
+            "name": "structure definition",
+            "emotion": "kind",
+            "description": "definition of $1",
+            "doc": [
+                "I refer to some kind of @StructureDefinition. People don't usually refer to me directly"
+            ]
+        },
         "TableLiteral": {
             "name": "table literal",
             "description": "$1 row table",
@@ -1463,14 +1484,20 @@
                     "doc": "\\⊤\\ if both are \\⊤\\ or both are \\⊥\\.",
                     "names": ["=", "equals"],
                     "inputs": [
-                        { "doc": "The other value to check.", "names": "value" }
+                        {
+                            "doc": "The other value to check.",
+                            "names": "value"
+                        }
                     ]
                 },
                 "notequal": {
                     "doc": "\\⊤\\ if both are opposites.",
                     "names": ["≠", "notequal"],
                     "inputs": [
-                        { "doc": "The other value to check.", "names": "value" }
+                        {
+                            "doc": "The other value to check.",
+                            "names": "value"
+                        }
                     ]
                 }
             },
@@ -1488,12 +1515,22 @@
                 "equals": {
                     "doc": "Is another value also nothing? It better be, otherwise, \\⊥\\.",
                     "names": ["=", "equals"],
-                    "inputs": [{ "doc": "The other value.", "names": "value" }]
+                    "inputs": [
+                        {
+                            "doc": "The other value.",
+                            "names": "value"
+                        }
+                    ]
                 },
                 "notequals": {
                     "doc": "Is another value /not/ nothing?",
                     "names": ["≠", "notequal"],
-                    "inputs": [{ "doc": "The other value.", "names": "value" }]
+                    "inputs": [
+                        {
+                            "doc": "The other value.",
+                            "names": "value"
+                        }
+                    ]
                 }
             },
             "conversion": {
@@ -1530,14 +1567,20 @@
                     "doc": "\\⊤\\ if I am the same character sequence as the given @Text.",
                     "names": ["=", "equals"],
                     "inputs": [
-                        { "doc": "The @Text to compare.", "names": "value" }
+                        {
+                            "doc": "The @Text to compare.",
+                            "names": "value"
+                        }
                     ]
                 },
                 "notequals": {
                     "doc": "\\⊤\\ if I am /not/ the same character sequence as the given @Text.",
                     "names": "≠",
                     "inputs": [
-                        { "doc": "The @Text to compare", "names": "value" }
+                        {
+                            "doc": "The @Text to compare",
+                            "names": "value"
+                        }
                     ]
                 },
                 "has": {
@@ -1621,7 +1664,10 @@
                     ],
                     "names": ["+", "combine"],
                     "inputs": [
-                        { "doc": "The @Text to append.", "names": "text" }
+                        {
+                            "doc": "The @Text to append.",
+                            "names": "text"
+                        }
                     ]
                 }
             },
@@ -1667,7 +1713,10 @@
                     ],
                     "names": ["+", "add"],
                     "inputs": [
-                        { "doc": "The @Number to add.", "names": "number" }
+                        {
+                            "doc": "The @Number to add.",
+                            "names": "number"
+                        }
                     ]
                 },
                 "subtract": {
@@ -1696,7 +1745,10 @@
                     ],
                     "names": ["·", "multiply"],
                     "inputs": [
-                        { "doc": "The number to multiply.", "names": "number" }
+                        {
+                            "doc": "The number to multiply.",
+                            "names": "number"
+                        }
                     ]
                 },
                 "divide": {
@@ -1790,7 +1842,10 @@
                     ],
                     "names": ["√", "root"],
                     "inputs": [
-                        { "doc": "The root to compute.", "names": "number" }
+                        {
+                            "doc": "The root to compute.",
+                            "names": "number"
+                        }
                     ]
                 },
                 "lessThan": {
@@ -1918,7 +1973,10 @@
             },
             "conversion": {
                 "text": "An Arabic @Text representation of my digits.",
-                "list": "A list of the numbers 1 to whatever number is given, such as\n\\10→[]\\.",
+                "list": [
+                    "I convert a number to a list of the numbers from \\1\\ to whatever number is given. For example:",
+                    "\\10→[]\\"
+                ],
                 "s2m": "Seconds to minutes",
                 "s2h": "Seconds to hours",
                 "s2day": "Seconds to days",
@@ -1990,12 +2048,12 @@
                 "add": {
                     "doc": [
                         "I create a new @List with the given item at the end.",
-                        "\\['apple' 'banana' 'mango'].add('watermelon')\\"
+                        "\\['apple' 'banana' 'mango'].with('watermelon')\\"
                     ],
                     "names": ["with", "add"],
                     "inputs": [
                         {
-                            "doc": "I the value you want to add.",
+                            "doc": "I am the value you want to add.",
                             "names": "item"
                         }
                     ]
@@ -2009,7 +2067,10 @@
                     ],
                     "names": ["withList", "append"],
                     "inputs": [
-                        { "doc": "The list of values to add.", "names": "list" }
+                        {
+                            "doc": "The list of values to add.",
+                            "names": "list"
+                        }
                     ]
                 },
                 "replace": {
@@ -2023,7 +2084,10 @@
                             "doc": "The index of the value to replace",
                             "names": "index"
                         },
-                        { "doc": "The replacement value", "names": "value" }
+                        {
+                            "doc": "The replacement value",
+                            "names": "value"
+                        }
                     ]
                 },
                 "length": {
@@ -2070,7 +2134,10 @@
                     ],
                     "names": "has",
                     "inputs": [
-                        { "doc": "The value to search for.", "names": "item" }
+                        {
+                            "doc": "The value to search for.",
+                            "names": "item"
+                        }
                     ]
                 },
                 "join": {
@@ -2199,7 +2266,6 @@
                             "names": "translator"
                         }
                     ],
-
                     "translator": [
                         {
                             "doc": "The item being translated.",
@@ -2425,7 +2491,10 @@
                     ],
                     "names": ["=", "equals"],
                     "inputs": [
-                        { "doc": "The @Set to compare.", "names": "set" }
+                        {
+                            "doc": "The @Set to compare.",
+                            "names": "set"
+                        }
                     ]
                 },
                 "notequals": {
@@ -2435,7 +2504,10 @@
                     ],
                     "names": ["≠", "notequal"],
                     "inputs": [
-                        { "doc": "The @Set to compare.", "names": "set" }
+                        {
+                            "doc": "The @Set to compare.",
+                            "names": "set"
+                        }
                     ]
                 },
                 "add": {
@@ -2444,7 +2516,12 @@
                         "\\{1 2 3} + 4\\"
                     ],
                     "names": ["with", "add", "+"],
-                    "inputs": [{ "doc": "The item to add", "names": "item" }]
+                    "inputs": [
+                        {
+                            "doc": "The item to add",
+                            "names": "item"
+                        }
+                    ]
                 },
                 "remove": {
                     "doc": [
@@ -2454,7 +2531,10 @@
                     ],
                     "names": ["remove", "-"],
                     "inputs": [
-                        { "doc": "The item to remove.", "names": "item" }
+                        {
+                            "doc": "The item to remove.",
+                            "names": "item"
+                        }
                     ]
                 },
                 "union": {
@@ -2477,7 +2557,10 @@
                     ],
                     "names": ["intersection", "∩"],
                     "inputs": [
-                        { "doc": "The set to compare with me.", "names": "set" }
+                        {
+                            "doc": "The set to compare with me.",
+                            "names": "set"
+                        }
                     ]
                 },
                 "difference": {
@@ -2608,7 +2691,10 @@
                     ],
                     "names": "pair",
                     "inputs": [
-                        { "doc": "Key to pair with a value.", "names": "key" },
+                        {
+                            "doc": "Key to pair with a value.",
+                            "names": "key"
+                        },
                         {
                             "doc": "The value to pair with the key",
                             "names": "value"
@@ -2621,7 +2707,12 @@
                         "\\{'amy': 6points 'tony':3points}.unpair('amy')\\"
                     ],
                     "names": "unpair",
-                    "inputs": [{ "doc": "The key to forget.", "names": "key" }]
+                    "inputs": [
+                        {
+                            "doc": "The key to forget.",
+                            "names": "key"
+                        }
+                    ]
                 },
                 "remove": {
                     "doc": [
@@ -2650,7 +2741,10 @@
                         }
                     ],
                     "checker": [
-                        { "doc": "The key being checked.", "names": "key" },
+                        {
+                            "doc": "The key being checked.",
+                            "names": "key"
+                        },
                         {
                             "doc": "The value being checked.",
                             "names": "value"
@@ -2719,14 +2813,20 @@
                     "doc": "I check if I have the exact same cells in the exact same order as another @Table.",
                     "names": ["=", "equals"],
                     "inputs": [
-                        { "doc": "The other table to check.", "names": "value" }
+                        {
+                            "doc": "The other table to check.",
+                            "names": "value"
+                        }
                     ]
                 },
                 "notequal": {
                     "doc": "I check if any of my cells are different or in a different order from another @Table.",
                     "names": ["≠", "notEquals"],
                     "inputs": [
-                        { "doc": "The other table to check.", "names": "value" }
+                        {
+                            "doc": "The other table to check.",
+                            "names": "value"
+                        }
                     ]
                 }
             },
@@ -3040,7 +3140,10 @@
                 "Lots of things can go wrong with this one. If you lose your internet connection, or the URL doesn't resolve to anything, or the URL isn't public, or the URL isn't an HTML page… All of these can lead to exception. If if you find a page that works, you'll get some @Number indicating a percent commplete and then a @List of the words on the page."
             ],
             "names": ["🔗", "Webpage"],
-            "url": { "doc": "The HTML webpage URL to get.", "names": "url" },
+            "url": {
+                "doc": "The HTML webpage URL to get.",
+                "names": "url"
+            },
             "query": {
                 "doc": "The CSS query to evaluate on the HTML",
                 "names": "query"
@@ -3543,10 +3646,6 @@
                 "So much goes into a pose. Check out my many inputs to see what kinds of poses you might make!"
             ],
             "names": ["🤪", "Pose"],
-            "duration": {
-                "doc": "How long this pose should take to enter from a previous pose.",
-                "names": "duration"
-            },
             "style": {
                 "doc": "The style of animation to use when moving to this pose.",
                 "names": "style"
@@ -3642,9 +3741,18 @@
         "Place": {
             "doc": "I'm a location on @Stage. All my inputs are optional, because I'm at the center by default.",
             "names": ["📍", "Place"],
-            "x": { "doc": "A position on the x-axis.", "names": "x" },
-            "y": { "doc": "A position on the y-axis", "names": "y" },
-            "z": { "doc": "A position on the z-axis", "names": "z" },
+            "x": {
+                "doc": "A position on the x-axis.",
+                "names": "x"
+            },
+            "y": {
+                "doc": "A position on the y-axis",
+                "names": "y"
+            },
+            "z": {
+                "doc": "A position on the z-axis",
+                "names": "z"
+            },
             "rotation": {
                 "doc": "Rotation at this position",
                 "names": ["📐", "rotation"]
@@ -3669,7 +3777,10 @@
         "Matter": {
             "doc": "I'm physical properties of output, which influence how I interact with other output on stage.",
             "names": ["⚛️", "Matter"],
-            "mass": { "doc": "A weight, in kilograms", "names": "mass" },
+            "mass": {
+                "doc": "A weight, in kilograms",
+                "names": "mass"
+            },
             "bounciness": {
                 "doc": "How much of my energy to keep on collision, 0 means none, 1 means all of it.",
                 "names": "bounciness"
@@ -3832,7 +3943,10 @@
             "bounce": {
                 "doc": "I create a @Sequence that bounces @Output a given height.",
                 "names": ["bounce"],
-                "height": { "doc": "How high to bounce.", "names": ["height"] }
+                "height": {
+                    "doc": "How high to bounce.",
+                    "names": ["height"]
+                }
             },
             "spin": {
                 "doc": "I create a @Sequence that rotates @Output around its center.",
@@ -3841,6 +3955,10 @@
             "fadein": {
                 "doc": "I create a @Sequence that fades @Output in from invisible to visible.",
                 "names": ["fadein"]
+            },
+            "fadeout": {
+                "doc": "I create a @Sequence that fades @Output from visible to invisible. Try me in an exiting @Sequence!",
+                "names": ["fadeout"]
             },
             "popup": {
                 "doc": "I create a @Sequence that makes @Output scale in quickly than shrink to its normal size.",
@@ -4042,10 +4160,6 @@
                     "on": "hide block backgrounds",
                     "off": "show block backgrounds"
                 },
-                "localized": {
-                    "on": "show localized text",
-                    "off": "show all text"
-                },
                 "glyphs": {
                     "on": "collapse the matching glyphs",
                     "off": "expand the matching glyphs"
@@ -4153,6 +4267,9 @@
             },
             "button": {
                 "submit": "submit this chat message"
+            },
+            "options": {
+                "locale": "choose the language for output"
             }
         },
         "timeline": {
@@ -4256,8 +4373,8 @@
                     "animate": {
                         "label": "animations",
                         "modes": [
-                            "off",
-                            "on",
+                            "animations off",
+                            "normal speed",
                             "half speed",
                             "third speed",
                             "quarter speed"
@@ -4278,12 +4395,27 @@
                             "do not show space and tab indicators"
                         ]
                     },
+                    "lines": {
+                        "label": "line numbers",
+                        "modes": [
+                            "show line numbers in text mode",
+                            "do not show line numbers in text mode"
+                        ]
+                    },
                     "writing": {
                         "label": "writing layout",
                         "modes": [
                             "horizontal, left to right",
                             "vertical, right to left",
                             "vertical, left to right"
+                        ]
+                    },
+                    "localized": {
+                        "label": "code localization",
+                        "modes": [
+                            "do not localize code",
+                            "localize code when available",
+                            "localize code but prefer symbols"
                         ]
                     }
                 },
@@ -4389,18 +4521,36 @@
                 "message": "Where is this place? Can we go home?"
             },
             "landing": {
-                "call": ["Hi! Want to bring words to life with us? 😊"],
-                "value": "Learn to code by animating words, emojis, and symbols from the world's languages, whatever your abilities.",
-                "description": "Wordplay is an innovative programming language 🖥️ with block and text editing 📝, playful inputs like time 🕦, sound 🎤, webpages 🔗, and physics 🌎, instant time-travel debugging ⏪, and comprehensive documentation 🗂️. All in a growing list of the world's languages 🌐, following the latest web accessibility standards ♿️. Share with friends, private groups, or the world ↗️. Free forever from the <University of Washington Information School@https://ischool.uw.edu/>.",
+                "value": "Create interactive stories with words, symbols, emojis, and code with us!",
+                "description": [
+                    "Wordplay is programming language that enables you to:",
+                    "• Playfully animate words and emojis 🤪",
+                    "• Use time 🕦, sound 🎤, websites 🔗, and physics 🌎",
+                    "• Share 🤝 with friends, groups, or anyone",
+                    "• Code in any world language 🌐",
+                    "• Edit with mice 🖱️, touch 👆, and keyboards ⌨️",
+                    "• Debug forwards ⏩ and backwards ⏪",
+                    "• View with screens 🖥️ and screen readers 🔊",
+                    "Free forever from the <University of Washington@https://ischool.uw.edu/>."
+                ],
                 "beta": [
-                    "Wordplay is in *beta*. That means that functionality might change or not work as intended, and localizations might be incomplete. Report bugs and share ideas in <Discord@https://discord.gg/Jh2Qq9husy>, or <GitHub@https://github.com/wordplaydev/wordplay/issues>. See our <1.0 plans@https://github.com/wordplaydev/wordplay/milestones/1.0> and <contribute@https://github.com/wordplaydev/wordplay/wiki/contribute> if you can!"
+                    "Wordplay is in *beta*, so it might not work as intended or be complete. Report bugs and share ideas in <GitHub@https://github.com/wordplaydev/wordplay/issues>, see our <1.0 plans@https://github.com/wordplaydev/wordplay/milestones/1.0>, and <contribute@https://github.com/wordplaydev/wordplay/wiki/contribute>."
                 ],
                 "link": {
-                    "learn": "A dramatic tutorial of cast of characters",
+                    "learn": "Learn the language with a dramatic cast of characters",
+                    "guide": "Search and browse the language reference",
                     "projects": "Create and share peformances",
                     "galleries": "Experience others' performances",
                     "rights": "Responsibilities, ours and yours",
-                    "about": "Why does this place exist?"
+                    "about": "Why does this place exist?",
+                    "community": {
+                        "label": "Community",
+                        "subtitle": "Chat with us on Discord."
+                    },
+                    "contribute": {
+                        "label": "Contribute",
+                        "subtitle": "Help us make Wordplay."
+                    }
                 }
             },
             "learn": {
@@ -4413,6 +4563,10 @@
                 "options": {
                     "lesson": "current lesson"
                 }
+            },
+            "guide": {
+                "header": "Guide",
+                "description": "This is a reference for every part of the Wordplay programming language. Search for a concept or browse the list to learn more."
             },
             "projects": {
                 "header": "Projects",
@@ -4428,6 +4582,7 @@
                 "button": {
                     "newproject": "new project",
                     "editproject": "edit this project",
+                    "viewcode": "view this project's code",
                     "newgallery": "new gallery",
                     "unarchive": "unarchive this project"
                 },
@@ -4589,7 +4744,7 @@
             },
             "donate": {
                 "header": "Donate",
-                "prompt": "Enable more accessible, global programming",
+                "prompt": "Help us pay for bandwidth and compensate student and teacher contributors.",
                 "content": [
                     "Wordplay is a free, community-based project supported by the <University of Washington@https://washington.edu>. We rely on gifts from people who believe in our mission of accessible, language-inclusive, educational programming languages.",
                     "Here are our current costs:",

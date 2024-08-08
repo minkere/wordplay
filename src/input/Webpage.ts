@@ -1,5 +1,4 @@
 import StreamValue from '@values/StreamValue';
-import type Evaluator from '@runtime/Evaluator';
 import StreamDefinition from '../nodes/StreamDefinition';
 import { getDocLocales } from '../locale/getDocLocales';
 import { getNameLocales } from '../locale/getNameLocales';
@@ -8,7 +7,7 @@ import TextType from '../nodes/TextType';
 import TextValue from '../values/TextValue';
 import StreamType from '../nodes/StreamType';
 import createStreamEvaluator from './createStreamEvaluator';
-import type Locale from '../locale/Locale';
+import type LocaleText from '../locale/LocaleText';
 import ListValue from '../values/ListValue';
 import ListType from '../nodes/ListType';
 import TextLiteral from '../nodes/TextLiteral';
@@ -21,6 +20,7 @@ import NoneType from '../nodes/NoneType';
 import MessageException from '../values/MessageException';
 import type ExceptionValue from '../values/ExceptionValue';
 import type Locales from '../locale/Locales';
+import type Evaluation from '@runtime/Evaluation';
 
 /**
  * Webpage stream values can be one of three things:
@@ -46,12 +46,13 @@ type FetchResponse = {
 type FetchResponseValue = string | number | { error: string };
 
 const FetchErrors = {
-    'invalid-url': (locale: Locale) => locale.input.Webpage.error.invalid,
-    'not-available': (locale: Locale) => locale.input.Webpage.error.unvailable,
-    'not-html': (locale: Locale) => locale.input.Webpage.error.notHTML,
-    'no-connection': (locale: Locale) =>
+    'invalid-url': (locale: LocaleText) => locale.input.Webpage.error.invalid,
+    'not-available': (locale: LocaleText) =>
+        locale.input.Webpage.error.unvailable,
+    'not-html': (locale: LocaleText) => locale.input.Webpage.error.notHTML,
+    'no-connection': (locale: LocaleText) =>
         locale.input.Webpage.error.noConnection,
-    'reached-limit': (locale: Locale) => locale.input.Webpage.error.limit,
+    'reached-limit': (locale: LocaleText) => locale.input.Webpage.error.limit,
 };
 
 export type FetchError = keyof typeof FetchErrors;
@@ -67,16 +68,16 @@ export default class Webpage extends StreamValue<
     timeout: NodeJS.Timeout | undefined = undefined;
 
     constructor(
-        evaluator: Evaluator,
+        evaluation: Evaluation,
         url: string,
         query: string,
         frequency: number,
     ) {
         super(
-            evaluator,
-            evaluator.project.shares.input.Webpage,
+            evaluation,
+            evaluation.getEvaluator().project.shares.input.Webpage,
             // Percent loaded starts at 0
-            new NumberValue(evaluator.project.shares.input.Webpage, 0),
+            new NumberValue(evaluation.getCreator(), 0),
             { url, response: 0 },
         );
 
@@ -92,6 +93,9 @@ export default class Webpage extends StreamValue<
     }
 
     react(event: FetchResponse) {
+        // If we're mirroring, and the input was a different URL, then don't replay it, since it's not relevant.
+        if (event.url !== this.url) return;
+
         // Cache the response
         URLResponseCache.set(event.url, { response: event, time: Date.now() });
 
@@ -160,16 +164,21 @@ export default class Webpage extends StreamValue<
     }
 
     start() {
-        this.get();
+        this.resetTimeout(true, true);
     }
 
     stop() {
-        this.resetTimeout();
+        this.resetTimeout(false, false);
         return;
     }
 
-    resetTimeout() {
+    resetTimeout(again: boolean, soon: boolean) {
         if (this.timeout) clearTimeout(this.timeout);
+        if (again)
+            this.timeout = setTimeout(
+                () => this.get(),
+                soon ? 50 : Math.max(1, this.frequency) * 60 * 1000,
+            );
     }
 
     async get() {
@@ -304,11 +313,7 @@ export default class Webpage extends StreamValue<
         });
 
         // Get it again in the next period.
-        this.resetTimeout();
-        this.timeout = setTimeout(
-            () => this.get(),
-            Math.max(1, this.frequency) * 60 * 1000,
-        );
+        this.resetTimeout(true, false);
     }
 
     getType() {
@@ -351,7 +356,7 @@ export function createWebpageDefinition(locales: Locales) {
             Webpage,
             (evaluation) =>
                 new Webpage(
-                    evaluation.getEvaluator(),
+                    evaluation,
                     evaluation.get(url.names, TextValue)?.text ?? '',
                     evaluation.get(query.names, TextValue)?.text ?? '',
                     evaluation.get(frequency.names, NumberValue)?.toNumber() ??

@@ -9,10 +9,10 @@
     import MarkupHTMLView from '../concepts/MarkupHTMLView.svelte';
     import Glyphs from '../../lore/Glyphs';
     import { RevisionSet } from './util/Menu';
-    import concretize from '../../locale/concretize';
     import Token from '../../nodes/Token';
     import Bind from '../../nodes/Bind';
     import Evaluate from '../../nodes/Evaluate';
+    import Input from '@nodes/Input';
 
     export let menu: Menu;
     /* What to run when hiding the menu */
@@ -48,13 +48,13 @@
     let evaluateBind: Bind | undefined;
     $: if (
         selectedRevision instanceof Revision &&
-        newNode instanceof Bind &&
+        newNode instanceof Input &&
         newParent instanceof Evaluate
     ) {
         const fun = newParent.getFunction(selectedRevision.context);
         evaluateBind = fun?.inputs.find(
             (input) =>
-                newNode instanceof Bind && input.hasName(newNode.getNames()[0])
+                newNode instanceof Input && input.hasName(newNode.getName()),
         );
     }
     $: selectedConcept =
@@ -108,11 +108,11 @@
                           .some(
                               (node) =>
                                   node instanceof Token &&
-                                  node.getText().startsWith(event.key)
+                                  node.getText().startsWith(event.key),
                           )
                     : $locales
                           .get((l) => l.term[revision.purpose])
-                          .startsWith(event.key)
+                          .startsWith(event.key),
             );
             if (match)
                 menu = menu.inSubmenu()
@@ -161,7 +161,7 @@
                 aria-label={entry instanceof Revision
                     ? entry
                           .getEditedNode($locales)[0]
-                          .getDescription(concretize, $locales, entry.context)
+                          .getDescription($locales, entry.context)
                           .toText()
                     : $locales.getLocale().term[entry.purpose]}
                 class={`revision ${
@@ -177,10 +177,13 @@
                     {#if newNode !== undefined}
                         {#if revision.isRemoval()}
                             <strike
-                                ><RootView node={newNode} localized /></strike
+                                ><RootView
+                                    node={newNode}
+                                    localized="symbolic"
+                                /></strike
                             >
                         {:else}
-                            <RootView node={newNode} localized />
+                            <RootView node={newNode} localized="symbolic" />
                         {/if}
                     {:else}
                         <MarkupHTMLView
@@ -189,13 +192,12 @@
                     {/if}
                 {:else if entry instanceof RevisionSet}
                     <MarkupHTMLView
-                        markup={concretize(
-                            $locales,
+                        markup={$locales.concretize(
                             `/${$locales.get((l) =>
                                 entry instanceof RevisionSet
                                     ? l.term[entry.purpose]
-                                    : ''
-                            )}…/`
+                                    : '',
+                            )}…/`,
                         )}
                     />
                 {/if}
@@ -231,7 +233,7 @@
                             newNode.statements.length > 1
                                 ? newNode
                                 : newNode}
-                            localized
+                            localized="symbolic"
                         />
                     </div>
                 {/if}

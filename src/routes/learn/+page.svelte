@@ -9,7 +9,6 @@
         locales,
         tutorialProgress,
     } from '../../db/Database';
-    import { onMount } from 'svelte';
     import Loading from '@components/app/Loading.svelte';
     import Page from '@components/app/Page.svelte';
     import Speech from '../../components/lore/Speech.svelte';
@@ -18,40 +17,36 @@
     import Writing from '../../components/app/Writing.svelte';
     import Header from '../../components/app/Header.svelte';
     import type Tutorial from '../../tutorial/Tutorial';
+    import { browser } from '$app/environment';
 
     let tutorial: Tutorial | undefined | null = undefined;
-    let fallback = false;
 
-    onMount(async () => {
-        tutorial = await Locales.getTutorial(
+    $: if (browser && $locales) {
+        Locales.getTutorial(
             $locales.get((l) => l.language),
-            $locales.get((l) => l.region)
-        );
-        fallback =
-            $locales
-                .getLanguages()
-                .some((lang) => tutorial?.language === lang) === false;
-    });
+            $locales.get((l) => l.region),
+        ).then((t) => (tutorial = t));
+    }
 
     // If hot module reloading, and there's a locale update, refresh the tutorial.
     if (import.meta.hot) {
         import.meta.hot.on('locales-update', async () => {
             tutorial = await Locales.getTutorial(
                 $locales.get((l) => l.language),
-                $locales.get((l) => l.region)
+                $locales.get((l) => l.region),
             );
         });
     }
 
     // Set progress if URL indicates one.
-    $: {
-        if (tutorial) {
-            const progress = Progress.fromURL(tutorial, $page.url.searchParams);
-            if (progress) Settings.setTutorialProgress(progress);
-        }
+    let initial: Progress | undefined = undefined;
+    $: if (tutorial) {
+        initial = Progress.fromURL(tutorial, $page.url.searchParams);
+        if (initial) Settings.setTutorialProgress(initial);
     }
 
     function navigate(newProgress: Progress) {
+        initial = undefined;
         Settings.setTutorialProgress(newProgress);
         // Set the URL to mirror the progress, if not at it.
         goto(newProgress.getURL());
@@ -75,14 +70,17 @@
 {:else}
     <Page>
         <TutorialView
-            progress={new Progress(
-                tutorial,
-                $tutorialProgress.act,
-                $tutorialProgress.scene,
-                $tutorialProgress.line
-            )}
+            progress={initial ??
+                new Progress(
+                    tutorial,
+                    $tutorialProgress.act,
+                    $tutorialProgress.scene,
+                    $tutorialProgress.line,
+                )}
             {navigate}
-            {fallback}
+            fallback={$locales
+                .getLanguages()
+                .some((lang) => tutorial?.language === lang) === false}
         />
     </Page>
 {/if}

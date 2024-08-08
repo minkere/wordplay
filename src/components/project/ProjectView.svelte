@@ -1,5 +1,5 @@
 <script context="module" lang="ts">
-    export const TYPING_DELAY = 300;
+    export const TYPING_DELAY = 500;
 </script>
 
 <script lang="ts">
@@ -84,6 +84,7 @@
         blocks,
         localized,
         Creators,
+        animationFactor,
     } from '../../db/Database';
     import Arrangement from '../../db/Arrangement';
     import type Value from '../../values/Value';
@@ -93,6 +94,7 @@
         Restart,
         ShowKeyboardHelp,
         VisibleModifyCommands,
+        VisibleNavigateCommands,
         handleKeyCommand,
     } from '../editor/util/Commands';
     import CommandButton from '../widgets/CommandButton.svelte';
@@ -102,7 +104,6 @@
     import Toggle from '../widgets/Toggle.svelte';
     import Announcer from './Announcer.svelte';
     import { toClipboard } from '../editor/util/Clipboard';
-    import { PersistenceType } from '../../db/ProjectHistory';
     import Spinning from '../app/Spinning.svelte';
     import CreatorView from '../app/CreatorView.svelte';
     import Moderation from './Moderation.svelte';
@@ -121,6 +122,13 @@
     import Glyphs from '../../lore/Glyphs';
     import Speech from '@components/lore/Speech.svelte';
     import Translate from './Translate.svelte';
+    import { AnimationFactorIcons } from '@db/AnimationFactorSetting';
+    import { COPY_SYMBOL } from '@parser/Symbols';
+    import CopyButton from './CopyButton.svelte';
+    import { localeToString } from '@locale/Locale';
+    import type Locale from '@locale/Locale';
+    import { default as ModeChooser } from '@components/widgets/Mode.svelte';
+    import OutputLocaleChooser from './OutputLocaleChooser.svelte';
 
     export let project: Project;
     export let original: Project | undefined = undefined;
@@ -221,14 +229,20 @@
     });
     setContext(KeyModfifierSymbol, keyModifiers);
 
-    // When keyboard edit idle changes to true, set a timeout
+    /** Keep a currently selected output locale to send to the Evaluator for evaluation and rendering */
+    let evaluationLocale: Locale | undefined = undefined;
+
+    /** Keep track of locales used */
+    $: localesUsed = project.getLocalesUsed();
+
+    // When keyboard isn't idle, set a timeout to set it to idle later.
     // to reset it to false after a delay.
     $: {
         if ($keyboardEditIdle !== IdleKind.Idle) {
             if (keyboardIdleTimeout) clearTimeout(keyboardIdleTimeout);
             keyboardIdleTimeout = setTimeout(
                 () => keyboardEditIdle.set(IdleKind.Idle),
-                500,
+                TYPING_DELAY,
             );
         }
     }
@@ -304,7 +318,9 @@
                 () => updateEvaluator(newProject),
                 TYPING_DELAY,
             );
-        } else updateEvaluator(newProject);
+        } else {
+            updateEvaluator(newProject);
+        }
     });
 
     // When the locales change, reset the evaluator to use the new locales.
@@ -318,7 +334,8 @@
         const newEvaluator = new Evaluator(
             newProject,
             DB,
-            newProject.getLocales(),
+            // Choose the selected evaluation locale or if not selected, currently selected IDE locale
+            evaluationLocale ? [evaluationLocale] : localesUsed,
             true,
             replayInputs ? $evaluator : undefined,
         );
@@ -1213,13 +1230,6 @@
     function revert() {
         if (original) Projects.reviseProject(original);
     }
-
-    /** Copy the project, make it private, track it, then gotoProject(). */
-    function copy() {
-        const copy = project.copy().asPublic(false);
-        Projects.track(copy, true, PersistenceType.Online, false);
-        goto(copy.getLink(false));
-    }
 </script>
 
 <svelte:head><title>Wordplay - {project.getName()}</title></svelte:head>
@@ -1236,7 +1246,9 @@
 {#if warn}
     <Moderation {project} />
 {/if}
-<!-- Render the app header and the current project, if there is one. -->
+<!-- Render a live region with announcements as soon as possible -->
+<Announcer bind:announce />
+<!-- Render the current project. -->
 <main class="project" class:dragging={$dragged !== undefined} bind:this={view}>
     <div
         class="canvas"
@@ -1334,27 +1346,61 @@
                                             )}>⨉</ConfirmButton
                                         >
                                     {/if}
+                                {:else if tile.kind === TileKind.Output}
+                                    <span
+                                        title={$locales.get(
+                                            (l) =>
+                                                l.ui.dialog.settings.mode
+                                                    .animate,
+                                        ).modes[$animationFactor]}
+                                        ><Emoji
+                                            >{AnimationFactorIcons[
+                                                $animationFactor
+                                            ]}</Emoji
+                                        >
+                                        {#if $animationFactor === 0}{$locales.get(
+                                                (l) =>
+                                                    l.ui.dialog.settings.mode
+                                                        .animate,
+                                            ).modes[0]}{/if}</span
+                                    >
                                 {/if}
                             </svelte:fragment>
                             <svelte:fragment slot="extra">
                                 <!-- Put some extra buttons in the output toolbar -->
                                 {#if tile.kind === TileKind.Output}
-                                    <CommandButton command={Restart} />
+                                    {#if !editable}<CopyButton {project}
+                                        ></CopyButton>{/if}
                                     {#if showOutput || requestedPlay}<Button
                                             uiid="editProject"
+                                            background
+                                            padding={false}
                                             tip={$locales.get(
                                                 (l) =>
                                                     l.ui.page.projects.button
-                                                        .editproject,
+                                                        .viewcode,
                                             )}
                                             action={() => stopPlaying()}
-                                            ><Emoji>🔎</Emoji></Button
+                                            ><Emoji>👁️</Emoji></Button
                                         >{/if}
+                                    <CommandButton
+                                        background
+                                        command={Restart}
+                                    />
+                                    {#if localesUsed.length > 1}<OutputLocaleChooser
+                                            {localesUsed}
+                                            locale={evaluationLocale}
+                                            change={(locale) => {
+                                                evaluationLocale = locale;
+                                                updateEvaluator(project);
+                                            }}
+                                        />{/if}
                                     <!-- {#if !$evaluation.evaluator.isPlaying()}
                                     <Painting
                                             bind:painting
                                         />{/if} -->
                                     <Toggle
+                                        background
                                         tips={$locales.get(
                                             (l) => l.ui.output.toggle.grid,
                                         )}
@@ -1362,6 +1408,7 @@
                                         toggle={() => (grid = !grid)}
                                         ><Emoji>▦</Emoji></Toggle
                                     ><Toggle
+                                        background
                                         tips={$locales.get(
                                             (l) => l.ui.output.toggle.fit,
                                         )}
@@ -1372,6 +1419,8 @@
                                         ></Toggle
                                     >
                                 {:else if tile.isSource()}
+                                    {#if !editable}<CopyButton {project}
+                                        ></CopyButton>{/if}
                                     <Switch
                                         onLabel={withVariationSelector('🖱️')}
                                         onTip={$locales.get(
@@ -1385,27 +1434,46 @@
                                         toggle={toggleBlocks}
                                         on={$blocks}
                                     />
-                                    <Switch
-                                        onLabel={$locales.getLocale().language}
-                                        onTip={$locales.get(
+                                    <ModeChooser
+                                        labeled={false}
+                                        descriptions={$locales.get(
                                             (l) =>
-                                                l.ui.source.toggle.localized.on,
+                                                l.ui.dialog.settings.mode
+                                                    .localized,
                                         )}
-                                        offLabel={withVariationSelector('🌎')}
-                                        offTip={$locales.get(
-                                            (l) =>
-                                                l.ui.source.toggle.localized
-                                                    .off,
-                                        )}
-                                        toggle={(on) =>
-                                            Settings.setLocalized(on)}
-                                        on={$localized}
+                                        choice={$localized === 'actual'
+                                            ? 0
+                                            : $localized === 'localized'
+                                              ? 1
+                                              : 2}
+                                        select={(choice) =>
+                                            Settings.setLocalized(
+                                                choice === 0
+                                                    ? 'actual'
+                                                    : choice === 1
+                                                      ? 'localized'
+                                                      : 'symbolic',
+                                            )}
+                                        modes={[
+                                            '...',
+                                            localeToString(
+                                                $locales.getLocale(),
+                                            ),
+                                            '😀',
+                                        ]}
                                     />
-                                    <!-- Make a Button for every modify command -->
-                                    {#each VisibleModifyCommands as command}<CommandButton
+                                    <!-- Make a Button for every navigate command -->
+                                    {#each VisibleNavigateCommands as command}<CommandButton
                                             {command}
                                             sourceID={tile.id}
                                         />{/each}
+                                    <!-- Make a Button for every modify command if editable -->
+                                    {#if editable}
+                                        {#each VisibleModifyCommands as command}<CommandButton
+                                                {command}
+                                                sourceID={tile.id}
+                                            />{/each}
+                                    {/if}
                                 {/if}
                             </svelte:fragment>
                             <svelte:fragment slot="content">
@@ -1456,15 +1524,14 @@
                                     </div>
                                 {/if}</svelte:fragment
                             ><svelte:fragment slot="footer"
-                                >{#if tile.kind === TileKind.Source}
-                                    <GlyphChooser
-                                        sourceID={tile.id}
-                                    />{:else if tile.kind === TileKind.Output && layout.fullscreenID !== tile.id && !requestedPlay && !showOutput}
+                                >{#if tile.kind === TileKind.Source && editable}
+                                    <GlyphChooser sourceID={tile.id} />
+                                {:else if tile.kind === TileKind.Output && layout.fullscreenID !== tile.id && !requestedPlay && !showOutput}
                                     <Timeline
                                         evaluator={$evaluator}
                                     />{/if}</svelte:fragment
                             ><svelte:fragment slot="margin"
-                                >{#if tile.kind === TileKind.Source}
+                                >{#if tile.kind === TileKind.Source && editable}
                                     <Annotations
                                         {project}
                                         evaluator={$evaluator}
@@ -1491,10 +1558,6 @@
                     action={() => revert()}>↺</Button
                 >{/if}
             {#if !editable}
-                <Button
-                    tip={$locales.get((l) => l.ui.project.button.duplicate)}
-                    action={copy}><span class="copy">✐+</span></Button
-                >
                 {@const owner = project.getOwner()}
                 {#if owner}
                     {#await Creators.getCreator(owner)}
@@ -1507,7 +1570,7 @@
                 <Button
                     tip={$locales.get((l) => l.ui.project.button.copy)}
                     action={() => toClipboard(project.toWordplay())}
-                    ><Emoji>📋</Emoji></Button
+                    ><Emoji>{COPY_SYMBOL}</Emoji></Button
                 >
             {/if}
 
@@ -1549,12 +1612,15 @@
                 {/if}
                 <Translate {project}></Translate>
             {:else}{project.getName()}{/if}
-            <Separator />
+            {#if editable && layout.hasVisibleCollapsedSource()}
+                <Separator />
+            {/if}
             {#each project.getSources() as source, index}
                 {@const tile = layout.getTileWithID(Layout.getSourceID(index))}
                 {#if tile && tile.isCollapsed()}
                     <!-- Mini source view output is visible when collapsed, or if its main, when output is collapsed. -->
                     <SourceTileToggle
+                        {project}
                         {source}
                         expanded={tile.mode === Mode.Expanded}
                         on:toggle={() => toggleTile(tile)}
@@ -1573,9 +1639,9 @@
                     >{$locales.get((l) => l.ui.source.overwritten)}</span
                 >
             {/if}
-            <Separator />
             {#each layout.getNonSources() as tile}
-                {#if tile.isCollapsed()}
+                <!-- No need to show the palette if not editable. -->
+                {#if tile.isVisibleCollapsed(editable)}
                     <NonSourceTileToggle
                         {project}
                         {tile}
@@ -1625,15 +1691,12 @@
                 <RootView
                     node={$dragged}
                     spaces={project.getSourceOf($dragged)?.spaces}
-                    localized
+                    localized={$localized}
                 />
                 <div class="cursor">🐲</div>
             </div>
         {/if}
     {/if}
-
-    <!-- Render a live region with announcements -->
-    <Announcer bind:announce />
 </main>
 
 <style>
@@ -1735,17 +1798,8 @@
         flex-direction: row;
         flex-wrap: nowrap;
         align-items: center;
+        margin-left: auto;
         gap: var(--wordplay-spacing);
-    }
-
-    .copy {
-        display: inline-block;
-        background: var(--wordplay-highlight-color);
-        color: var(--wordplay-background);
-        border-radius: var(--wordplay-border-radius);
-        padding-inline-start: var(--wordplay-spacing);
-        padding-inline-end: var(--wordplay-spacing);
-        user-select: none;
     }
 
     .footer {

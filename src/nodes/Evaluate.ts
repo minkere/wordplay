@@ -1,6 +1,5 @@
 import Bind from '@nodes/Bind';
 import type Conflict from '@conflicts/Conflict';
-import MisplacedInput from '@conflicts/MisplacedInput';
 import MissingInput from '@conflicts/MissingInput';
 import UnexpectedInput from '@conflicts/UnexpectedInput';
 import IncompatibleInput from '@conflicts/IncompatibleInput';
@@ -48,7 +47,6 @@ import StreamDefinitionValue from '../values/StreamDefinitionValue';
 import Glyphs from '../lore/Glyphs';
 import FunctionType from './FunctionType';
 import AnyType from './AnyType';
-import concretize from '../locale/concretize';
 import Sym from './Sym';
 import Refer from '../edit/Refer';
 import BasisType from './BasisType';
@@ -59,6 +57,12 @@ import NameType from './NameType';
 import { NonFunctionType } from './NonFunctionType';
 import type Locales from '../locale/Locales';
 import UnionType from './UnionType';
+import NoExpressionType from './NoExpressionType';
+import StructureDefinitionType from './StructureDefinitionType';
+import Block from './Block';
+import Reference from './Reference';
+import SeparatedEvaluate from '@conflicts/SeparatedEvaluate';
+import Input from './Input';
 
 type Mapping = {
     expected: Bind;
@@ -315,9 +319,11 @@ export default class Evaluate extends Expression {
                 else {
                     // Is there a named input that matches?
                     const bind = givenInputs.find(
-                        (i) => i instanceof Bind && i.sharesName(expectedInput),
+                        (i) =>
+                            i instanceof Input &&
+                            expectedInput.hasName(i.getName()),
                     );
-                    if (bind instanceof Bind) {
+                    if (bind instanceof Input) {
                         // Remove it from the given inputs list.
                         givenInputs.splice(givenInputs.indexOf(bind), 1);
                         mapping.given = bind;
@@ -325,7 +331,7 @@ export default class Evaluate extends Expression {
                     // If there wasn't a named input matching, see if the next non-bind expression matches the type.
                     else if (
                         givenInputs.length > 0 &&
-                        !(givenInputs[0] instanceof Bind)
+                        !(givenInputs[0] instanceof Input)
                     ) {
                         mapping.given = givenInputs.shift();
                     }
@@ -351,7 +357,7 @@ export default class Evaluate extends Expression {
         const mapping = this.getInputMapping(context);
         const given = mapping?.inputs.find((input) => input.expected === bind)
             ?.given;
-        return given instanceof Bind ? given.value : given;
+        return given instanceof Input ? given.value : given;
     }
 
     getLastInput(): Expression | undefined {
@@ -371,10 +377,8 @@ export default class Evaluate extends Expression {
         const mapping = this.getMappingFor(bind, context);
         if (mapping === undefined) return this;
 
-        // If we'replacing with nothing
-
         // If it's already bound, replace the binding.
-        if (mapping.given instanceof Bind) {
+        if (mapping.given instanceof Input) {
             if (expression === undefined)
                 return this.replace(mapping.given, expression);
             else if (mapping.given.value)
@@ -386,14 +390,7 @@ export default class Evaluate extends Expression {
         else if (mapping.given === undefined && expression !== undefined) {
             return this.replace(this.inputs, [
                 ...this.inputs,
-                named
-                    ? Bind.make(
-                          undefined,
-                          Names.make([bind.getNames()[0]]),
-                          undefined,
-                          expression,
-                      )
-                    : expression,
+                named ? Input.make(bind.getNames()[0], expression) : expression,
             ]);
         }
 
@@ -420,7 +417,7 @@ export default class Evaluate extends Expression {
     }
 
     computeConflicts(context: Context): Conflict[] {
-        const conflicts = [];
+        const conflicts: Conflict[] = [];
 
         if (this.close === undefined)
             conflicts.push(
@@ -488,9 +485,12 @@ export default class Evaluate extends Expression {
                         ),
                     ];
 
-                // Given a bind with an incompatible name? Conflict.
-                if (given instanceof Bind && !expected.sharesName(given))
-                    return [new MisplacedInput(fun, this, expected, given)];
+                // Given a named with an incompatible name? Conflict.
+                if (
+                    given instanceof Input &&
+                    !expected.hasName(given.getName())
+                )
+                    return [new UnexpectedInput(fun, this, given)];
 
                 // Concretize the expected type.
                 const expectedType = getConcreteExpectedType(
@@ -502,7 +502,12 @@ export default class Evaluate extends Expression {
 
                 // Figure out what type this expected input is. Resolve any type variables to concrete values.
                 if (given instanceof Expression) {
-                    const givenType = given.getType(context);
+                    // Don't rely on the bind's specified type, since it's not a reliable source of type information. Ask it's value directly.
+                    const givenType =
+                        given instanceof Input
+                            ? given.value?.getType(context) ??
+                              new NoExpressionType(given)
+                            : given.getType(context);
                     if (!expectedType.accepts(givenType, context, given))
                         conflicts.push(
                             new IncompatibleInput(
@@ -552,16 +557,14 @@ export default class Evaluate extends Expression {
             // See if any of the remaining given inputs are bound to unknown names.
             for (const given of mapping.extra) {
                 if (
-                    given instanceof Bind &&
-                    !fun.inputs.some((expected) => expected.sharesName(given))
-                )
+                    given instanceof Input &&
+                    !fun.inputs.some((expected) =>
+                        expected.hasName(given.getName()),
+                    )
+                ) {
                     conflicts.push(new UnknownInput(fun, this, given));
+                } else conflicts.push(new UnexpectedInput(fun, this, given));
             }
-
-            // If there are remaining given inputs that didn't match anything, something's wrong.
-            if (mapping.extra.length > 0)
-                for (const extra of mapping.extra)
-                    conflicts.push(new UnexpectedInput(fun, this, extra));
 
             // Check type
             if (!(fun instanceof StreamDefinition)) {
@@ -588,6 +591,53 @@ export default class Evaluate extends Expression {
             }
         }
 
+        // If there are two consectutive IncompatibleInput conflicts, and the first is a StructureDefinitionType and the next is a block,
+        // offer to remove the space separating them.
+
+        const possibleEvaluates: [
+            Reference,
+            boolean,
+            Block,
+            Conflict,
+            Conflict,
+        ][] = [];
+        conflicts.find((conflict, index, conflicts) => {
+            const next = conflicts[index + 1];
+            if (
+                conflict instanceof IncompatibleInput &&
+                (conflict.givenType instanceof StructureDefinitionType ||
+                    conflict.givenType instanceof FunctionType) &&
+                next instanceof IncompatibleInput &&
+                next.givenNode instanceof Block
+            ) {
+                const ref = conflict.givenNode
+                    .nodes()
+                    .findLast((n): n is Reference => n instanceof Reference);
+                if (ref instanceof Reference)
+                    possibleEvaluates.push([
+                        ref,
+                        conflict.givenType instanceof StructureDefinitionType,
+                        next.givenNode,
+                        conflict,
+                        next,
+                    ]);
+            }
+        });
+
+        for (const [
+            ref,
+            structure,
+            block,
+            first,
+            second,
+        ] of possibleEvaluates) {
+            // Remove the two conflicts from the list.
+            conflicts.splice(conflicts.indexOf(first), 1);
+            conflicts.splice(conflicts.indexOf(second), 1);
+            // Add a new one.
+            conflicts.push(new SeparatedEvaluate(ref, block, structure));
+        }
+
         return conflicts;
     }
 
@@ -603,8 +653,8 @@ export default class Evaluate extends Expression {
 
         return type instanceof FunctionType && type.definition
             ? type.definition
-            : type instanceof StructureType
-              ? type.definition
+            : type instanceof StructureDefinitionType
+              ? type.type.definition
               : type instanceof StreamDefinitionType
                 ? type.definition
                 : undefined;
@@ -674,15 +724,7 @@ export default class Evaluate extends Expression {
 
     getDependencies(context: Context): Expression[] {
         const fun = this.getFunction(context);
-        const expression =
-            fun === undefined
-                ? undefined
-                : fun instanceof FunctionDefinition &&
-                    fun.expression !== undefined
-                  ? fun.expression
-                  : fun instanceof StructureDefinition
-                    ? fun.expression
-                    : undefined;
+        const expression = fun?.expression;
 
         // Evaluates depend on their function, their inputs, and the function's expression.
         return [
@@ -929,9 +971,8 @@ export default class Evaluate extends Expression {
     }
 
     getStartExplanations(locales: Locales) {
-        return concretize(
-            locales,
-            locales.get((l) => l.node.Evaluate.start),
+        return locales.concretize(
+            (l) => l.node.Evaluate.start,
             this.inputs.length > 0,
         );
     }
@@ -941,9 +982,8 @@ export default class Evaluate extends Expression {
         context: Context,
         evaluator: Evaluator,
     ) {
-        return concretize(
-            locales,
-            locales.get((l) => l.node.Evaluate.finish),
+        return locales.concretize(
+            (l) => l.node.Evaluate.finish,
             this.getValueIfDefined(locales, context, evaluator),
         );
     }

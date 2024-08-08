@@ -10,7 +10,7 @@ import {
 import { CameraSetting } from './CameraSetting';
 import { MicSetting } from './MicSetting';
 import { derived } from 'svelte/store';
-import type { SupportedLocale } from '../locale/Locale';
+import type { SupportedLocale } from '../locale/LocaleText';
 import type { Database } from './Database';
 import type { SerializedLayout } from '../components/project/Layout';
 import type Arrangement from './Arrangement';
@@ -18,12 +18,14 @@ import type { WritingLayout } from '../locale/Scripts';
 import type Progress from '../tutorial/Progress';
 import Layout from '../components/project/Layout';
 import { BlocksSetting } from './BlocksSetting';
-import { LocalizedSetting } from './LocalizedSetting';
+import { LocalizedSetting, type LocalizedValue } from './LocalizedSetting';
 import { DarkSetting } from './DarkSetting';
 import { doc, getDoc } from 'firebase/firestore';
 import { firestore } from './firebase';
 import { CreatorCollection } from './CreatorDatabase';
 import { SpaceSetting } from './SpaceSetting';
+import { LineSetting } from './LinesSetting';
+import { AnnotationsSetting } from './AnnotationsSetting';
 
 /** The schema of the record written to the creators collection. */
 export type SettingsSchemaV1 = {
@@ -65,6 +67,8 @@ export default class SettingsDatabase {
         localized: LocalizedSetting,
         dark: DarkSetting,
         space: SpaceSetting,
+        lines: LineSetting,
+        annotations: AnnotationsSetting,
     };
 
     /** A derived store based on animation factor */
@@ -170,6 +174,14 @@ export default class SettingsDatabase {
         this.settings.space.set(this.database, space);
     }
 
+    setLines(on: boolean) {
+        this.settings.lines.set(this.database, on);
+    }
+
+    setShowAnnotations(on: boolean) {
+        this.settings.annotations.set(this.database, on);
+    }
+
     getDark() {
         return this.settings.dark.get();
     }
@@ -190,8 +202,8 @@ export default class SettingsDatabase {
         return this.settings.localized.get();
     }
 
-    setLocalized(on: boolean) {
-        this.settings.localized.set(this.database, on);
+    setLocalized(value: LocalizedValue) {
+        this.settings.localized.set(this.database, value);
     }
 
     /** To serialize to a database */

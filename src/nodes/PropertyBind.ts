@@ -17,7 +17,6 @@ import PropertyReference from './PropertyReference';
 import IncompatibleType from '../conflicts/IncompatibleType';
 import Glyphs from '../lore/Glyphs';
 import Purpose from '../concepts/Purpose';
-import concretize from '../locale/concretize';
 import NodeRef from '../locale/NodeRef';
 import Sym from './Sym';
 import ExpressionPlaceholder from './ExpressionPlaceholder';
@@ -28,9 +27,9 @@ import { buildBindings } from './Evaluate';
 import ExceptionValue from '@values/ExceptionValue';
 import Evaluation from '@runtime/Evaluation';
 import StartEvaluation from '@runtime/StartEvaluation';
-import StructureType from './StructureType';
 import Bind from './Bind';
 import InvalidProperty from '@conflicts/InvalidProperty';
+import StructureDefinitionType from './StructureDefinitionType';
 
 export default class PropertyBind extends Expression {
     readonly reference: PropertyReference;
@@ -116,12 +115,14 @@ export default class PropertyBind extends Expression {
         const bind = this.reference.resolve(context);
         if (
             bind instanceof Bind &&
-            structureType instanceof StructureType &&
-            !structureType.definition.inputs.some((input) =>
+            structureType instanceof StructureDefinitionType &&
+            !structureType.type.definition.inputs.some((input) =>
                 input.names.sharesName(bind.names),
             )
         )
-            conflicts.push(new InvalidProperty(structureType.definition, this));
+            conflicts.push(
+                new InvalidProperty(structureType.type.definition, this),
+            );
 
         return conflicts;
     }
@@ -216,10 +217,7 @@ export default class PropertyBind extends Expression {
     }
 
     getStartExplanations(locales: Locales) {
-        return concretize(
-            locales,
-            locales.get((l) => l.node.PropertyBind.start),
-        );
+        return locales.concretize((l) => l.node.PropertyBind.start);
     }
 
     getFinishExplanations(
@@ -227,9 +225,8 @@ export default class PropertyBind extends Expression {
         context: Context,
         evaluator: Evaluator,
     ) {
-        return concretize(
-            locales,
-            locales.get((l) => l.node.PropertyBind.finish),
+        return locales.concretize(
+            (l) => l.node.PropertyBind.finish,
             this.reference.name
                 ? new NodeRef(this.reference.name, locales, context)
                 : undefined,

@@ -815,7 +815,7 @@
                             "Text",
                             "serious",
                             "Why don't you try making a text in this blank @Program?",
-                            "You can use whatever quotes you like — single \\''\\, double \\''\\, angle \\«»\\, brackets \\「」\\ — in whatever language you like. The only rule is that if you start some text with an opening quote symbol, you must finish it with a closing one. Everything inside is the text value I will create!"
+                            "You can use whatever quotes you like — single \\''\\, double \\\"\"\\, angle \\«»\\, brackets \\「」\\ — in whatever language you like. The only rule is that if you start some text with an opening quote symbol, you must finish it with a closing one. Everything inside is the text value I will create!"
                         ],
                         ["edit", "''"],
                         null,
@@ -2259,7 +2259,7 @@
                         [
                             "Conditional",
                             "curious",
-                            "@FunctionDefinition? The silence is breaking? What is silence? How does one break it? Are we every really silent? Who is this person? Are they the one breaking it?"
+                            "@FunctionDefinition? The silence is breaking? What is silence? How does one break it? Are we ever really silent? Who is this person? Are they the one breaking it?"
                         ],
                         null,
                         [
@@ -2933,7 +2933,7 @@
                         [
                             "Reaction",
                             "serious",
-                            "Here's an example. See the @Key stream? Putting \\∆\\ before it asks, 'Did this stream change'? Before it changes, I evaluate to the initial value, \\1m\\. But when the space key is pressed, @Program reevaluates, and I evaluate to the *next* expression, which is \\1m\\ plus whatever the previous stream value was; that's represented by \\.\\. This adds 1m to the size of the phrase, making the word get bigger and bigger."
+                            "Here's an example. See the @Key stream? Putting \\∆\\ before it asks, /Did this stream change?/ Before it changes, I evaluate to the initial value, \\1m\\. But when the space key is pressed, @Program reevaluates, and I evaluate to the *next* expression, which is \\1m\\ plus whatever the previous stream value was; that's represented by \\.\\. This adds \\1m\\ to the size of the phrase, making the word get bigger and bigger."
                         ],
                         ["fit", "Phrase('hi' size: 1m … ∆ Key(' ') … 1m + .)"],
                         null,
@@ -3320,7 +3320,7 @@
                             "sad",
                             "Omigod omigod omigod, I CANNOT believe I forgot about color. Okay, so any @Pose can have a color, right? But @Color comes in three parts. First, a @Color/lightness between 0 and 100%, which you can think of as how bright a room is, from black to white with color in the middle at 50%.",
                             "Then, a @Color/chroma between 0 and 100, which you can think of has how much color there is, from no color gray to full color.",
-                            "And finally, a @Color/chroma, which you can think of like a color wheel, from red to green to blue in degrees. So you want me to be bright red? Set my rest pose color to \\Color(50% 300 30°)\\."
+                            "And finally, a @Color/hue, which you can think of like a color wheel, from red to green to blue in degrees. So you want me to be bright red? Set my rest pose color to \\Color(50% 300 30°)\\."
                         ],
                         ["edit", "Phrase('red' color: 🌈(50% 300 30°))"],
                         null,

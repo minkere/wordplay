@@ -10,6 +10,7 @@
         Settings,
         dark,
         spaceIndicator,
+        showLines,
     } from '../../db/Database';
     import Arrangement from '../../db/Arrangement';
     import Options from '../widgets/Options.svelte';
@@ -19,8 +20,8 @@
     import Mode from '../widgets/Mode.svelte';
     import Dialog from '../widgets/Dialog.svelte';
     import CreatorView from '../app/CreatorView.svelte';
-    import Beta from '../../routes/Beta.svelte';
     import { Creator } from '../../db/CreatorDatabase';
+    import { AnimationFactorIcons } from '@db/AnimationFactorSetting';
 
     let user = getUser();
 
@@ -52,21 +53,6 @@
 </script>
 
 <div class="settings">
-    <Dialog
-        button={{
-            tip: 'Show dialog to what beta means',
-            label: 'beta',
-        }}
-        description={{
-            header: 'Beta?',
-            explanation: '',
-        }}><Beta /></Dialog
-    >
-    <Link nowrap external to="https://discord.gg/Jh2Qq9husy"
-        >{$locales.get((l) => l.term.help)}/{$locales.get(
-            (l) => l.term.feedback,
-        )}</Link
-    >
     <Status />
     <Link nowrap to="/login">
         <CreatorView
@@ -115,7 +101,7 @@
                 )}
                 choice={$animationFactor}
                 select={(choice) => Settings.setAnimationFactor(choice)}
-                modes={['🧘🏽‍♀️', '🏃‍♀️', '½', '⅓', '¼']}
+                modes={AnimationFactorIcons}
             /></p
         >
         <!-- <p
@@ -210,18 +196,27 @@
             />
         </p>
         <p
-        ><Mode
-            descriptions={$locales.get(
-                (l) => l.ui.dialog.settings.mode.space,
-            )}
-            choice={$spaceIndicator === false ? 1 : 0}
-            select={(choice) =>
-                Settings.setSpace(
-                    choice === 0 ? true : false,
+            ><Mode
+                descriptions={$locales.get(
+                    (l) => l.ui.dialog.settings.mode.space,
                 )}
-            modes={['✓', '✗']}
-        />
-    </p>
+                choice={$spaceIndicator ? 1 : 0}
+                select={(choice) =>
+                    Settings.setSpace(choice === 1 ? true : false)}
+                modes={['✗', '✓']}
+            />
+        </p>
+        <p
+            ><Mode
+                descriptions={$locales.get(
+                    (l) => l.ui.dialog.settings.mode.lines,
+                )}
+                choice={$showLines ? 1 : 0}
+                select={(choice) =>
+                    Settings.setLines(choice === 1 ? true : false)}
+                modes={['✗', '✓']}
+            />
+        </p>
     </Dialog>
 </div>
 

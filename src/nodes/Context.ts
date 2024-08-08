@@ -8,7 +8,6 @@ import type Reference from './Reference';
 import type PropertyReference from './PropertyReference';
 import type Definition from './Definition';
 import type StreamDefinition from './StreamDefinition';
-import Templates from '@concepts/Templates';
 
 /** Passed around during type inference and conflict detection to facilitate program analysis and cycle-detection. */
 export default class Context {
@@ -51,9 +50,11 @@ export default class Context {
     visit(node: Node) {
         this.stack.push(node);
     }
+
     unvisit() {
         this.stack.pop();
     }
+
     visited(node: Node) {
         return this.stack.includes(node);
     }
@@ -103,9 +104,5 @@ export default class Context {
 
     getStreamType(type: Type): StreamDefinition | undefined {
         return this.streamTypes.get(type);
-    }
-
-    getTemplates() {
-        return Templates;
     }
 }

@@ -33,18 +33,16 @@ import Sym from './Sym';
 import type Name from './Name';
 import DuplicateName from '@conflicts/DuplicateName';
 import { node, none, type Grammar, type Replacement, any } from './Node';
-import type Locale from '@locale/Locale';
+import type LocaleText from '@locale/LocaleText';
 import NodeRef from '@locale/NodeRef';
 import Glyphs from '../lore/Glyphs';
 import Purpose from '../concepts/Purpose';
 import Reaction from './Reaction';
 import Evaluate from './Evaluate';
 import FunctionType from './FunctionType';
-import concretize from '../locale/concretize';
 import getConcreteExpectedType from './Generics';
 import type Node from './Node';
 import ExpressionPlaceholder from './ExpressionPlaceholder';
-import Refer from '../edit/Refer';
 import UnknownType from './UnknownType';
 import type Locales from '../locale/Locales';
 import DocumentedExpression from './DocumentedExpression';
@@ -139,30 +137,6 @@ export default class Bind extends Expression {
                         ExpressionPlaceholder.make(),
                     ),
                 ];
-            }
-            // Evaluate, and the anchor is the open or an input? Offer binds to unset properties.
-            else if (
-                parent instanceof Evaluate &&
-                (anchor === parent.open ||
-                    (anchor instanceof Expression &&
-                        parent.inputs.includes(anchor)))
-            ) {
-                const mapping = parent.getInputMapping(context);
-                return mapping?.inputs
-                    .filter((input) => input.given === undefined)
-                    .map(
-                        (input) =>
-                            new Refer(
-                                (name) =>
-                                    Bind.make(
-                                        undefined,
-                                        Names.make([name]),
-                                        undefined,
-                                        ExpressionPlaceholder.make(),
-                                    ),
-                                input.expected,
-                            ),
-                    );
             } else return [];
         }
     }
@@ -306,11 +280,12 @@ export default class Bind extends Expression {
     sharesName(bind: Bind) {
         return this.names.sharesName(bind.names);
     }
+
     getNames(): string[] {
         return this.names.getNames();
     }
 
-    getPreferredName(locales: Locale[]) {
+    getPreferredName(locales: LocaleText[]) {
         return this.names.getPreferredNameString(locales);
     }
 
@@ -668,9 +643,8 @@ export default class Bind extends Expression {
     }
 
     getStartExplanations(locales: Locales, context: Context) {
-        return concretize(
-            locales,
-            locales.get((l) => l.node.Bind.start),
+        return locales.concretize(
+            (l) => l.node.Bind.start,
             this.value === undefined
                 ? undefined
                 : new NodeRef(this.value, locales, context),
@@ -682,9 +656,8 @@ export default class Bind extends Expression {
         context: Context,
         evaluator: Evaluator,
     ) {
-        return concretize(
-            locales,
-            locales.get((l) => l.node.Bind.finish),
+        return locales.concretize(
+            (l) => l.node.Bind.finish,
             this.getValueIfDefined(locales, context, evaluator),
             new NodeRef(
                 this.names,
@@ -699,8 +672,15 @@ export default class Bind extends Expression {
         return [locales.getName(this.names)];
     }
 
-    getGlyphs() {
-        return Glyphs.Bind;
+    getGlyphs(locales: Locales) {
+        const preferredName =
+            this.names.getPreferredName(locales.getLocales())?.getName() ??
+            this.names.getNames()[0];
+        return preferredName
+            ? {
+                  symbols: preferredName,
+              }
+            : Glyphs.Bind;
     }
 
     getKind() {

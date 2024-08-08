@@ -1,7 +1,7 @@
 import type { SupportedFace } from '../basis/Fonts';
 import type { TileKind } from '../components/project/Tile';
 import type EditTexts from './EditTexts';
-import type { DocText, Template } from './Locale';
+import type { DocText, Template } from './LocaleText';
 
 export type ButtonText = {
     /** The buttons label */
@@ -213,8 +213,6 @@ type UITexts = {
             blocks: ToggleText;
             /** The glyph chooser expand/collapse toggle */
             glyphs: ToggleText;
-            /** The localized on/off toggle */
-            localized: ToggleText;
         };
         button: {
             /** Output preview button for selecting output for display in output tile */
@@ -372,6 +370,10 @@ type UITexts = {
         button: {
             /** The chat submit button */
             submit: string;
+        };
+        options: {
+            /** The label for the locale chooser in output */
+            locale: string;
         };
     };
     /** The documentation browser */
@@ -604,6 +606,10 @@ type UITexts = {
                 writing: ModeText<[string, string, string]>;
                 /** The space_indicator on/off mode */
                 space: ModeText<[string, string]>;
+                /** The line number on/off mode */
+                lines: ModeText<[string, string]>;
+                /** The localized none/localized/symbolic mode */
+                localized: ModeText<[string, string, string]>;
             };
             options: {
                 /** The label for the microphone drop down */
@@ -666,12 +672,10 @@ type UITexts = {
             message: string;
         };
         landing: {
-            /** What function says as a call to action */
-            call: Template[];
             /** The value proposition for the site */
             value: Template;
             /** A description of the platform's features */
-            description: Template;
+            description: Template | Template[];
             /** The landing page beta warning */
             beta: Template[];
             /** The subtitles below links */
@@ -680,12 +684,24 @@ type UITexts = {
                 about: string;
                 /** What content is on the learn page */
                 learn: string;
+                /** What content is on the guide page */
+                guide: string;
                 /** What content is on the projects page */
                 projects: string;
                 /** What content is on the galleries page */
                 galleries: string;
                 /** What content is on the rights page */
                 rights: string;
+                /** The community link */
+                community: {
+                    label: string;
+                    subtitle: string;
+                };
+                /** The contributor link */
+                contribute: {
+                    label: string;
+                    subtitle: string;
+                };
             };
         };
         learn: {
@@ -704,6 +720,12 @@ type UITexts = {
                 /** The label for the lesson drop down */
                 lesson: string;
             };
+        };
+        guide: {
+            /** The header for the guide page */
+            header: string;
+            /** A description of the guide */
+            description: string;
         };
         /** The project creation and browsing page */
         projects: {
@@ -727,6 +749,8 @@ type UITexts = {
                 newproject: string;
                 /** Edit a project */
                 editproject: string;
+                /** View a project's code */
+                viewcode: string;
                 /** Create a new gallery */
                 newgallery: string;
                 /** The project unarchive button description */

@@ -7,13 +7,14 @@ import type TypeSet from './TypeSet';
 import type { BasisTypeName } from '../basis/BasisConstants';
 import type Definition from './Definition';
 import type Node from './Node';
-import type Locale from '@locale/Locale';
+import type LocaleText from '@locale/LocaleText';
 import Glyphs from '../lore/Glyphs';
 import type { Grammar } from './Node';
 import BasisType from './BasisType';
 import type Spaces from '../parser/Spaces';
 import type Locales from '../locale/Locales';
 import type Bind from './Bind';
+import StructureDefinitionType from './StructureDefinitionType';
 
 export const STRUCTURE_NATIVE_TYPE_NAME = 'structure';
 
@@ -95,7 +96,11 @@ export default class StructureType extends BasisType {
             // Are any of the given type's interfaces compatible with this?
             return (
                 type.definition.interfaces.find((int) => {
-                    return this.accepts(int.getType(context), context);
+                    const interfaceType = int.getType(context);
+                    return (
+                        interfaceType instanceof StructureDefinitionType &&
+                        this.accepts(interfaceType.type, context)
+                    );
                 }) !== undefined
             );
         });
@@ -144,7 +149,7 @@ export default class StructureType extends BasisType {
         return this;
     }
 
-    toWordplay(_?: Spaces, locale?: Locale) {
+    toWordplay(_?: Spaces, locale?: LocaleText) {
         return this.definition.getPreferredName(locale ? [locale] : []);
     }
 

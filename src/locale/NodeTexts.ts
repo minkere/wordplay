@@ -1,4 +1,4 @@
-import type { DocText, Template } from './Locale';
+import type { DocText, Template } from './LocaleText';
 import type Emotion from '../lore/Emotion';
 
 export type NodeText = {
@@ -170,7 +170,7 @@ type NodeTexts = {
             DuplicateName: {
                 conflict: ConflictText;
                 resolution: Template;
-            }
+            };
             /** When a shared bind has a duplicate name that's shared. Description inputs: $1: The duplicate */
             DuplicateShare: ConflictText;
             /**
@@ -205,7 +205,7 @@ type NodeTexts = {
             /** When there's no ending expression */
             ExpectedEndingExpression: InternalConflictText;
             /** When a statement is ignored because it's not last and not a bind */
-            IgnoredExpression: ConflictText;
+            IgnoredExpression: ConflictText & { resolution: Template };
         }>;
     /**
      * A single boolean literal, e.g., `⊤` or `⊥`
@@ -343,10 +343,6 @@ type NodeTexts = {
              * */
             UnexpectedTypeInput: ConflictText;
             /**
-             * When an input is given, but in the wrong order.
-             */
-            MisplacedInput: InternalConflictText;
-            /**
              * When an input is expected, but not given.
              * Description inputs: $1 = missing input, $2: evaluate that is missing input
              * */
@@ -368,6 +364,10 @@ type NodeTexts = {
              * When a list of inputs is given but isn't last.
              */
             InputListMustBeLast: InternalConflictText;
+            /**
+             * When something looks like an Evaluate with space
+             */
+            SeparatedEvaluate: InternalConflictText;
         }> &
         Exceptions<{
             /**
@@ -376,6 +376,7 @@ type NodeTexts = {
              */
             FunctionException: ExceptionText;
         }>;
+    Input: DescriptiveNodeText & SimpleExpressionText;
     /**
      * An expression placeholder, e.g., `1 + _`
      * Description inputs: $1: type or undefined
@@ -636,6 +637,7 @@ type NodeTexts = {
              */
             UnimplementedInterface: InternalConflictText;
         }>;
+    StructureDefinitionType: DescriptiveNodeText;
     /**
      * A table literal, e.g., `⎡a•# b•#⎦⎡1 2⎦`
      * Description inputs: $1 = the number of rows

@@ -59,9 +59,11 @@
     let focusView: HTMLButtonElement | undefined = undefined;
 
     // Focus next button on load.
-    onMount(() => nextButton?.focus());
+    onMount(() => {
+        nextButton?.focus();
+    });
 
-    /** The current place in the tutorial */
+    /** The current place in the tutorial. Defaults to persisted progress, but overwritten by search parameters. */
     $: act = progress.getAct();
     $: scene = progress.getScene();
     $: dialog = progress.getDialog();
@@ -111,7 +113,11 @@
     let performance: Performance;
     $: {
         let newPerformance = progress.getPerformance();
-        if (newPerformance !== undefined && newPerformance !== performance) {
+        if (
+            newPerformance !== undefined &&
+            newPerformance !== performance &&
+            conceptPath
+        ) {
             // Reset the concept path when code changes.
             conceptPath.set([]);
             performance = newPerformance;
@@ -408,6 +414,7 @@
         width: 100%;
         height: 100%;
         background: var(--wordplay-background);
+        padding: var(--wordplay-spacing);
     }
 
     .header {

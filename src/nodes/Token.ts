@@ -1,11 +1,11 @@
 import UnicodeString from '../models/UnicodeString';
 import type Spaces from '../parser/Spaces';
-import type Locale from '../locale/Locale';
+import type LocaleText from '../locale/LocaleText';
 import Node, { type Grammar, type Replacement } from './Node';
 import Sym from './Sym';
 import Emotion from '../lore/Emotion';
 import Purpose from '../concepts/Purpose';
-import type { Template } from '../locale/Locale';
+import type { Template } from '../locale/LocaleText';
 import type Root from './Root';
 import { TextCloseByTextOpen } from '../parser/Tokenizer';
 import {
@@ -14,8 +14,8 @@ import {
 } from '../locale/LanguageCode';
 import type Definition from './Definition';
 import type Context from './Context';
-import type { TemplateInput } from '../locale/concretize';
 import type Locales from '../locale/Locales';
+import type { TemplateInput } from '../locale/Locales';
 
 export default class Token extends Node {
     /** The one or more types of token this might represent. This is narrowed during parsing to one.*/
@@ -52,7 +52,7 @@ export default class Token extends Node {
         return [];
     }
 
-    isLeaf() {
+    isLeaf(): this is Token {
         return true;
     }
 
@@ -153,7 +153,12 @@ export default class Token extends Node {
         return [getTokenLabel(this, locales), this.getText()];
     }
 
-    localized(locales: Locale[], root: Root, context: Context) {
+    localized(
+        symbolic: boolean,
+        locales: LocaleText[],
+        root: Root,
+        context: Context,
+    ) {
         // Get this token's text
         let text = this.getText();
 
@@ -163,7 +168,9 @@ export default class Token extends Node {
             // Find the parent.
             const parent = root.getParent(this);
             if (parent) {
-                const leaves = parent.leaves();
+                const leaves = parent
+                    .leaves()
+                    .filter((t) => t.isSymbol(Sym.Text));
 
                 const open =
                     leaves[0] instanceof Token && leaves[0].isSymbol(Sym.Text)
@@ -203,9 +210,7 @@ export default class Token extends Node {
             if (parent) {
                 def = parent.getCorrespondingDefinition(context);
                 if (def) {
-                    text =
-                        def.names.getSymbolicName() ??
-                        def.names.getPreferredNameString(locales);
+                    text = def.names.getPreferredNameString(locales, symbolic);
                 }
             }
         }

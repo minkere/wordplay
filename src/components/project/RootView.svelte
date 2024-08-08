@@ -15,16 +15,17 @@
         type SpaceContext,
         CaretSymbol,
         LocalizeSymbol,
+        ShowLinesSymbol,
     } from './Contexts';
     import Root from '@nodes/Root';
     import Source from '@nodes/Source';
-    import Name from '@nodes/Name';
     import Program from '@nodes/Program';
     import { locales } from '../../db/Database';
     import TextLiteral from '../../nodes/TextLiteral';
     import FormattedLiteral from '../../nodes/FormattedLiteral';
     import type Caret from '@edit/Caret';
     import getPreferredSpaces from '@parser/getPreferredSpaces';
+    import type { LocalizedValue } from '@db/LocalizedSetting';
 
     export let node: Node;
     /** Optional space. To enable preferred space, set flag below. */
@@ -34,8 +35,10 @@
     /** If inline, and true, this will be a maximum width */
     export let elide = false;
     /** If true, hides names and docs not in a selected locale */
-    export let localized = false;
+    export let localized: LocalizedValue = 'symbolic';
     export let caret: Caret | undefined = undefined;
+    /** Whether to show line numbers */
+    export let lines: boolean = false;
 
     /** Get the root, or make one if it's not a source. */
     $: root = node instanceof Source ? node.root : new Root(node);
@@ -58,15 +61,20 @@
     let hidden = writable<Set<Node>>(new Set());
     setContext(HiddenSymbol, hidden);
 
-    let localize = writable<boolean>(localized);
+    let localize = writable<LocalizedValue>(localized ?? 'symbolic');
     setContext(LocalizeSymbol, localize);
-    $: localize.set(localized);
+    $: localize.set(localized ?? 'symbolic');
 
-    // Update what's hidden.
+    let showLines = writable<boolean>(lines);
+    setContext(ShowLinesSymbol, showLines);
+    $: showLines.set(lines);
+
+    // Update what's hidden when locales or localized changes.
     $: {
+        $locales;
         const newHidden = new Set<Node>();
 
-        if ($localize) {
+        if ($localize !== 'actual') {
             // Hide any language tagged nodes that 1) the caret isn't in, and 2) either have no language tag or aren't one of the selected tags.
             // Also hide any name separators if the first visible name has one.
             for (const tagged of node
@@ -79,7 +87,7 @@
                         n instanceof FormattedLiteral,
                 )) {
                 // Get the language tags on the nodes.
-                const tags = tagged.getTags();
+                const tags = tagged.getTagged();
 
                 // Is this caret inside this node?
                 const inside =
@@ -95,32 +103,28 @@
                                 tags.some((l) => l.getLanguage() === lang),
                             )
                     ) {
-                        let first = false;
-                        for (const nameOrDoc of tags) {
-                            const selectedLocale = $locales
-                                .getLanguages()
-                                .some((t) => t === nameOrDoc.getLanguage());
-                            // Not a selected language and not in the node and has a language? Hide it.
-                            if (!selectedLocale && nameOrDoc.language)
-                                newHidden.add(nameOrDoc);
-                            // Is the selected language and inert? Hide the language tag.
-                            else if (selectedLocale && nameOrDoc.language)
-                                newHidden.add(nameOrDoc.language);
-                            // Not first? Hide the separator.
-                            if (!first) {
-                                first = true;
-                                if (
-                                    nameOrDoc instanceof Name &&
-                                    nameOrDoc.separator
-                                )
-                                    newHidden.add(nameOrDoc.separator);
+                        // Keep track of if there's a node that's visible so we know when to hide separators.
+                        let priorVisible = false;
+                        // Go through each language tagged node to see if we should hide it.
+                        for (const nameDocOrText of tags) {
+                            const language = nameDocOrText.getLanguage();
+                            const selectedLocale =
+                                language !== undefined &&
+                                $locales.hasLanguage(language);
+                            // Not a selected locale? Hide the whole name or doc.
+                            if (!selectedLocale) {
+                                newHidden.add(nameDocOrText);
+                            }
+                            // Is the selected language? Hide just the locale tag and any preceding separator.
+                            else {
+                                if (nameDocOrText.language)
+                                    newHidden.add(nameDocOrText.language);
+                                // Hide the separator, if there is one.
+                                if (!priorVisible && nameDocOrText.separator)
+                                    newHidden.add(nameDocOrText.separator);
+                                priorVisible = true;
                             }
                         }
-                    }
-                    // Otherwise, hide all but the first name
-                    else {
-                        for (const nameOrDoc of tags.slice(1))
-                            newHidden.add(nameOrDoc);
                     }
                 }
 
@@ -144,12 +148,21 @@
         // Update hidden nodes.
         hidden.set(newHidden);
     }
+
+    $: lineDigits = spaces?.getLastLineNumber().toString().length ?? 3;
 </script>
 
 {#if inline}
-    <span class="root" class:inert class:elide><NodeView {node} /></span>
+    <span
+        class="root"
+        style="--line-count: {lineDigits}"
+        class:inert
+        class:elide><NodeView {node} /></span
+    >
 {:else}
-    <code class="root" class:inert><NodeView {node} /></code>
+    <code class="root" style="--line-count: {lineDigits}" class:inert
+        ><NodeView {node} /></code
+    >
 {/if}
 
 <style>

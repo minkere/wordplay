@@ -15,7 +15,7 @@ import type { Path } from '@nodes/Root';
 import type Source from '@nodes/Source';
 import type { User } from 'firebase/auth';
 import type Evaluator from '@runtime/Evaluator';
-import type Locale from '@locale/Locale';
+import type LocaleText from '@locale/LocaleText';
 import type Root from '@nodes/Root';
 import type {
     CommandContext,
@@ -25,6 +25,7 @@ import type {
 import type { CaretPosition } from '../../edit/Caret';
 import type LanguageCode from '../../locale/LanguageCode';
 import type Spaces from '@parser/Spaces';
+import type { LocalizedValue } from '@db/LocalizedSetting';
 
 // App related contexts
 
@@ -35,7 +36,7 @@ export function getUser(): UserContext {
 }
 
 export const LocalesSymbol = Symbol('locales');
-export function getLocales(): Locale[] {
+export function getLocales(): LocaleText[] {
     return getContext(LocalesSymbol);
 }
 
@@ -186,7 +187,7 @@ export function getHidden() {
 
 export const LocalizeSymbol = Symbol('localize');
 export function getLocalize() {
-    return getContext<Writable<boolean> | undefined>(LocalizeSymbol);
+    return getContext<Writable<LocalizedValue> | undefined>(LocalizeSymbol);
 }
 
 export const ConceptPathSymbol = Symbol('palette-path');
@@ -211,6 +212,12 @@ export const MenuNodeSymbol = Symbol('menu');
 export type MenuNodeContext = Writable<CaretPosition | undefined>;
 export function getMenuNode() {
     return getContext<MenuNodeContext | undefined>(MenuNodeSymbol);
+}
+
+export const ShowLinesSymbol = Symbol('lines');
+export type ShowLinesContext = Writable<boolean>;
+export function getShowLines() {
+    return getContext<ShowLinesContext>(ShowLinesSymbol);
 }
 
 // Output related contexts

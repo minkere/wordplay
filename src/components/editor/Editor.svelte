@@ -78,6 +78,7 @@
         animationFactor,
         blocks,
         locales,
+        showLines,
     } from '../../db/Database';
     import Button from '../widgets/Button.svelte';
     import OutputView from '../output/OutputView.svelte';
@@ -637,9 +638,8 @@
             spaceView instanceof HTMLElement && spaceView.dataset.id
                 ? parseInt(spaceView.dataset.id)
                 : undefined;
-        return tokenID
-            ? [source.getNodeByID(tokenID) as Token, spaceView]
-            : undefined;
+        const node = tokenID ? source.getNodeByID(tokenID) : undefined;
+        return node instanceof Token ? [node, spaceView] : undefined;
     }
 
     function getCaretPositionAt(event: PointerEvent): number | undefined {
@@ -1343,6 +1343,7 @@
 -->
 <!-- svelte-ignore missing-declaration -->
 <div
+    data-testid="editor"
     class="editor {$evaluation !== undefined && $evaluation.playing
         ? 'playing'
         : 'stepping'}"
@@ -1410,6 +1411,7 @@
         spaces={source.spaces}
         localized={$localized}
         caret={$caret}
+        lines={$showLines}
     />
     <!-- Render highlights above the code -->
     {#each outlines as outline}
@@ -1501,6 +1503,37 @@
         display: flex;
         flex-direction: column;
         gap: var(--wordplay-spacing);
+    }
+
+    .editor.readonly {
+        --size: 10px;
+
+        background-image: linear-gradient(
+                45deg,
+                var(--wordplay-alternating-color) 25%,
+                transparent 25%
+            ),
+            linear-gradient(
+                -45deg,
+                var(--wordplay-alternating-color) 25%,
+                transparent 25%
+            ),
+            linear-gradient(
+                45deg,
+                transparent 75%,
+                var(--wordplay-alternating-color) 75%
+            ),
+            linear-gradient(
+                -45deg,
+                transparent 75%,
+                var(--wordplay-alternating-color) 75%
+            );
+        background-size: var(--size) var(--size);
+        background-position:
+            0 0,
+            0 calc(var(--size) / 2),
+            calc(var(--size) / 2) calc(-1 * var(--size) / 2),
+            calc(-1 * var(--size) / 2) 0px;
     }
 
     .editor.dragging {

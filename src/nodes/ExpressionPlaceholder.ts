@@ -17,10 +17,9 @@ import UnimplementedType from './UnimplementedType';
 import TypeToken from './TypeToken';
 import { node, type Grammar, type Replacement, none, any } from './Node';
 import SimpleExpression from './SimpleExpression';
-import type { Template } from '@locale/Locale';
+import type { Template } from '@locale/LocaleText';
 import Glyphs from '../lore/Glyphs';
 import type Root from './Root';
-import concretize from '../locale/concretize';
 import NodeRef from '../locale/NodeRef';
 import Evaluate from './Evaluate';
 import getConcreteExpectedType from './Generics';
@@ -29,6 +28,7 @@ import FunctionDefinition from './FunctionDefinition';
 import Sym from './Sym';
 import Purpose from '../concepts/Purpose';
 import type Locales from '../locale/Locales';
+import Input from './Input';
 
 export default class ExpressionPlaceholder extends SimpleExpression {
     readonly placeholder: Token | undefined;
@@ -124,9 +124,21 @@ export default class ExpressionPlaceholder extends SimpleExpression {
         // Try to infer from surroundings.
         const parent = context.getRoot(this)?.getParent(this);
 
+        const evaluate =
+            parent instanceof Evaluate
+                ? parent
+                : parent instanceof BinaryEvaluate
+                  ? parent
+                  : parent && parent instanceof Input
+                    ? context.getRoot(this)?.getParent(parent)
+                    : undefined;
+
         // In an evaluate? Infer from the function's bind type.
-        if (parent instanceof Evaluate || parent instanceof BinaryEvaluate) {
-            const fun = parent.getFunction(context);
+        if (
+            evaluate instanceof Evaluate ||
+            evaluate instanceof BinaryEvaluate
+        ) {
+            const fun = evaluate.getFunction(context);
             if (fun) {
                 const bind =
                     parent instanceof Evaluate
@@ -136,7 +148,12 @@ export default class ExpressionPlaceholder extends SimpleExpression {
                               ?.expected
                         : fun.inputs[0];
                 if (bind) {
-                    return getConcreteExpectedType(fun, bind, parent, context);
+                    return getConcreteExpectedType(
+                        fun,
+                        bind,
+                        evaluate,
+                        context,
+                    );
                 }
             }
         } else if (parent instanceof Bind) return parent.getType(context);
@@ -192,10 +209,7 @@ export default class ExpressionPlaceholder extends SimpleExpression {
     }
 
     getStartExplanations(locales: Locales) {
-        return concretize(
-            locales,
-            locales.get((l) => l.node.ExpressionPlaceholder.start),
-        );
+        return locales.concretize((l) => l.node.ExpressionPlaceholder.start);
     }
 
     getGlyphs() {

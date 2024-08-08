@@ -25,11 +25,10 @@ import NoExpression from '@conflicts/NoExpression';
 import UnimplementedType from './UnimplementedType';
 import TypeToken from './TypeToken';
 import { any, node, none, type Grammar, type Replacement, list } from './Node';
-import type Locale from '@locale/Locale';
+import type LocaleText from '@locale/LocaleText';
 import InternalException from '@values/InternalException';
 import Glyphs from '../lore/Glyphs';
 import ExpressionPlaceholder from './ExpressionPlaceholder';
-import concretize from '../locale/concretize';
 import IncompatibleType from '../conflicts/IncompatibleType';
 import NameType from './NameType';
 import FunctionType from './FunctionType';
@@ -254,7 +253,7 @@ export default class FunctionDefinition extends DefinitionExpression {
         return this.share !== undefined;
     }
 
-    getPreferredName(locales: Locale[]) {
+    getPreferredName(locales: LocaleText[]) {
         return this.names.getPreferredNameString(locales);
     }
 
@@ -289,9 +288,11 @@ export default class FunctionDefinition extends DefinitionExpression {
     isEvaluationInvolved() {
         return true;
     }
+
     isEvaluationRoot() {
         return true;
     }
+
     getScopeOfChild(child: Node, context: Context): Node | undefined {
         // A function definition is the scope for its expression (since it defines inputs the expression might use),
         // but also for its output type and inputs, since they may refer to type variables declared on the function.
@@ -365,7 +366,10 @@ export default class FunctionDefinition extends DefinitionExpression {
 
     /** Functions have no dependencies; once they are defined, they cannot change what they evaluate to. */
     getDependencies(): Expression[] {
-        return this.expression !== undefined ? [this.expression] : [];
+        return [
+            ...this.inputs,
+            ...(this.expression !== undefined ? [this.expression] : []),
+        ];
     }
 
     /** Functions are not constant because they encapsulate a closure each time they are evaluated. */
@@ -428,6 +432,10 @@ export default class FunctionDefinition extends DefinitionExpression {
         );
     }
 
+    getRequiredInputs() {
+        return this.inputs.filter((input) => !input.hasDefault());
+    }
+
     evaluateTypeGuards(current: TypeSet, guard: GuardContext) {
         if (this.expression !== undefined)
             this.expression.evaluateTypeGuards(current, guard);
@@ -439,10 +447,7 @@ export default class FunctionDefinition extends DefinitionExpression {
     }
 
     getStartExplanations(locales: Locales) {
-        return concretize(
-            locales,
-            locales.get((l) => l.node.FunctionDefinition.start),
-        );
+        return locales.concretize((l) => l.node.FunctionDefinition.start);
     }
 
     getDescriptionInputs(locales: Locales) {

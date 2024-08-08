@@ -23,7 +23,6 @@ import Glyphs from '../lore/Glyphs';
 import Purpose from '../concepts/Purpose';
 import type { BasisTypeName } from '../basis/BasisConstants';
 import StreamToken from './StreamToken';
-import concretize from '../locale/concretize';
 import ExpectedStream from '../conflicts/ExpectedStream';
 import Sym from './Sym';
 import ExpressionPlaceholder from './ExpressionPlaceholder';
@@ -202,6 +201,9 @@ export default class Reaction extends Expression {
                 // track of the number of types the node has evaluated, identifying individual streams.
                 evaluator.incrementStreamEvaluationCount(this);
 
+                // Note that we're evaluating a reaction so we don't reuse memoized values.
+                evaluator.startEvaluatingReaction();
+
                 return undefined;
             }),
             // Then evaluate the condition.
@@ -257,6 +259,9 @@ export default class Reaction extends Expression {
         // Get the new value.
         const streamValue = value ?? evaluator.popValue(this);
 
+        // Unset the reaction tracking.
+        evaluator.stopEvaluatingReaction();
+
         // At this point in the compiled steps above, we should have a value on the stack
         // that is either the initial value for this reaction's stream or a new value.
         if (streamValue instanceof ExceptionValue) return streamValue;
@@ -304,10 +309,7 @@ export default class Reaction extends Expression {
     }
 
     getStartExplanations(locales: Locales) {
-        return concretize(
-            locales,
-            locales.get((l) => l.node.Reaction.start),
-        );
+        return locales.concretize((l) => l.node.Reaction.start);
     }
 
     getFinishExplanations(
@@ -315,9 +317,8 @@ export default class Reaction extends Expression {
         context: Context,
         evaluator: Evaluator,
     ) {
-        return concretize(
-            locales,
-            locales.get((l) => l.node.Reaction.finish),
+        return locales.concretize(
+            (l) => l.node.Reaction.finish,
             this.getValueIfDefined(locales, context, evaluator),
         );
     }

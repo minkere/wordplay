@@ -14,14 +14,15 @@ export default function parseProgram(tokens: Tokens, doc = false): Program {
     // If a borrow is next or there's no whitespace, parse a docs.
     const docs = tokens.nextIs(Sym.Doc) ? parseDocs(tokens) : undefined;
 
-    const borrows = [];
-    while (tokens.hasNext() && tokens.nextIs(Sym.Borrow))
-        borrows.push(parseBorrow(tokens));
+    const borrows: Borrow[] = [];
+    tokens.whileDo(
+        () => tokens.hasNext() && tokens.nextIs(Sym.Borrow),
+        () => borrows.push(parseBorrow(tokens)),
+    );
 
     const block = parseBlock(tokens, BlockKind.Root, doc);
 
-    // If the next token is the end, we're done! Otherwise, read all of the remaining
-    // tokens and bundle them into an unparsable.
+    // If the next token is the end, we're done!
     const end = tokens.nextIsEnd() ? tokens.read(Sym.End) : undefined;
 
     return new Program(docs, borrows, block, end);

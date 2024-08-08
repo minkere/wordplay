@@ -1,7 +1,6 @@
 import Conflict, { type Resolution } from './Conflict';
 import type UnparsableType from '@nodes/UnparsableType';
 import UnparsableExpression from '@nodes/UnparsableExpression';
-import concretize from '../locale/concretize';
 import type Locales from '../locale/Locales';
 import type Context from '@nodes/Context';
 import Expression from '@nodes/Expression';
@@ -10,6 +9,7 @@ import { toTokens } from '@parser/toTokens';
 import { Any, IsA } from '@nodes/Node';
 import Token from '@nodes/Token';
 import NodeRef from '@locale/NodeRef';
+import type Node from '@nodes/Node';
 
 export class UnparsableConflict extends Conflict {
     readonly unparsable: UnparsableType | UnparsableExpression;
@@ -24,26 +24,23 @@ export class UnparsableConflict extends Conflict {
         this.context = context;
     }
 
-    getConflictingNodes() {
+    getConflictingNodes(_: Context, nodes: Node[]) {
         return {
             primary: {
                 node: this.unparsable,
                 explanation: (locales: Locales) =>
-                    concretize(
-                        locales,
-                        locales.get(
-                            (l) =>
-                                l.node.UnparsableExpression.conflict
-                                    .UnparsableConflict.conflict,
-                        ),
+                    locales.concretize(
+                        (l) =>
+                            l.node.UnparsableExpression.conflict
+                                .UnparsableConflict.conflict,
                         this.unparsable instanceof UnparsableExpression,
                     ),
             },
-            resolutions: this.getLikelyIntensions(),
+            resolutions: this.getLikelyIntentions(nodes),
         };
     }
 
-    getLikelyIntensions(): Resolution[] {
+    getLikelyIntentions(templates: Node[]): Resolution[] {
         // Construct a set of tokens that weren't parseable so that we can find overlaps between this and possible templates.
         const unparsableTokens = new Set(
             this.unparsable.unparsables.map((t) => t.toWordplay()),
@@ -51,8 +48,7 @@ export class UnparsableConflict extends Conflict {
 
         // Scan through templates of possible expressions in the language, scoring them by number of overlapping tokens.
         return (
-            this.context
-                .getTemplates()
+            templates
                 // Only consider expressions
                 .filter(
                     (template): template is Expression =>
@@ -165,13 +161,10 @@ export class UnparsableConflict extends Conflict {
                 .map((expr) => {
                     return {
                         description: (locales: Locales, context: Context) =>
-                            concretize(
-                                locales,
-                                locales.get(
-                                    (l) =>
-                                        l.node.UnparsableExpression.conflict
-                                            .UnparsableConflict.resolution,
-                                ),
+                            locales.concretize(
+                                (l) =>
+                                    l.node.UnparsableExpression.conflict
+                                        .UnparsableConflict.resolution,
                                 expr.getLabel(locales),
                                 new NodeRef(expr, locales, context),
                             ),

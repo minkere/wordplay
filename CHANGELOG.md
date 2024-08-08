@@ -3,11 +3,147 @@
 We'll note all notable changes in this file, including bug fixes, enhancements, and all closed issues.
 Dates are in `YYYY-MM-DD` format and versions are in [semantic versioning](http://semver.org/) format.
 
+## 0.10.9 2024-08-10
+
+### Added
+
+-   Formatted different types of references
+
+### Fixed
+
+-   Added missing variation selector.
+-   Ensure projects are unmoderated by default.
+-   Cleaned up animation logs in `Animator` to ensure that new outputs with the same name can animate again.
+
+## 0.10.8 2024-08-03
+
+### Fixed
+
+-   Repaired borrowed bindings from other sources.
+-   Prevent project reevaluation during typing.
+-   Permit evaluation of functions with operator names without inputs.
+
+## 0.10.7 2024-07-27
+
+### Added
+
+-   Ability to copy one's own projects.
+
+### Fixed
+
+-   Fixed text sorting.
+-   Preserve concept on guide page refresh.
+-   Show multiple names when present in guide.
+-   [#533](https://github.com/wordplaydev/wordplay/issues/533) Fixed URLs to tutorial.
+-   [#542](https://github.com/wordplaydev/wordplay/issues/542) Provide error message for < Safari 16.4.
+
+## 0.10.6 2024-07-20
+
+### Added
+
+-   Persist annotations window collapse/expand state.
+
+### Fixed
+
+-   Fixed color of example code in docs.
+-   Changed unused bind conflict to only highlight name, not value.
+-   More reliable stage value announcements.
+-   Fixed case where stream expression is the condition, as opposed to in a condition.
+-   Fixed order of `MissingInput` conflict dialog.
+-   Change to no localization after translation.
+-   Polished live region announcements to prevent redundant reading.
+
+## 0.10.5 2024-07-13
+
+### Added
+
+-   Line numbers in editor.
+
+### Fixed
+
+-   [#514](https://github.com/wordplaydev/wordplay/issues/514) Fixed cursor position on hidden language tags.
+-   [#485](https://github.com/wordplaydev/wordplay/issues/485) Allow selection of language for output.
+-   [#524](https://github.com/wordplaydev/wordplay/issues/524) Fixed color of drop downs in dark mode.
+-   [#525](https://github.com/wordplaydev/wordplay/issues/525) Ensure projects are removed from galleries, even if they somehow didn't have a gallery ID in them.
+-   [#515](https://github.com/wordplaydev/wordplay/issues/515) Ensure local projects get an owner after logging in.
+-   [#520](https://github.com/wordplaydev/wordplay/issues/520) More generous parsing and conflicts around binary and unary evaluates.
+-   [#523](https://github.com/wordplaydev/wordplay/issues/523) More general handling of hidden tokens in cursor positioning.
+-   Fixed parsing bug that prevented complete parsing of the program.
+-   Fixed reactivity dependency bug that included evaluates in branch dependencies.
+-   Fixed selection of locale in evaluation.
+-   Reset owner and collaborators of copied project.
+-   Added variation selectors to emojis for Safari.
+-   Stripped machine translation tags from locale text on render.
+-   Fixed name of locale text JSON schema.
+-   Hide login link on landing page if logged in.
+-   Fixed closing text delimiter localization.
+-   Hide comma separator when localizing names and docs.
+-   Permit comma separators between text literals, docs, and names, allowing line breaks for text.
+-   Define `Input`s corresponding definition to enable code localization.
+-   Improved `MissingInput` conflict.
+-   Changed value of divide by zero to non-a-number; defined not-a-number literal.
+-   Improved dark grey contrast.
+-   Ensure templated strings are localized in tooltips.
+-   Allow addition to be used as a unary operation.
+-   Don't tokenize negative numbers; treat them as a unary evaluation.
+-   More consistent button styling.
+
+### Maintenance
+
+-   Added additional reactivity tests to cover granular re-evaulation of random.
+-   A basic project test to ensure all windows are visible.
+-   Simplified concretization of locale strings.
+
+## 0.10.4 2024-07-08
+
+### Fixed
+
+-   Added expressions control dependent on streams to expressions to reevaluate on reaction.
+-   Fixed background of buttons to make them visible on stage.
+-   Fixed grid line complementary color.
+
+## 0.10.3 2024-07-07
+
+### Fixed
+
+-   [#509](https://github.com/wordplaydev/wordplay/issues/509) Fixed parsing regression from infinite loop fixes.
+-   [#507](https://github.com/wordplaydev/wordplay/issues/507) Fixed Webpage stream replay bug.
+-   [#216](https://github.com/wordplaydev/wordplay/issues/216) Improved design of view code and copy buttons.
+-   [#397](https://github.com/wordplaydev/wordplay/issues/397) Redesigned home page for clarity and navigability.
+-   [#506](https://github.com/wordplaydev/wordplay/issues/506) Clarified behavior of localized setting.
+-   [#511](https://github.com/wordplaydev/wordplay/issues/511) Fixed granularity of reevaluation to preserve random values and animations.
+-   [#512](https://github.com/wordplaydev/wordplay/issues/512) Semi-automated batch translation of locales on command line.
+-   Added fade out sequence.
+-   Fixed select all button.
+
+## 0.10.2 2024-06-29
+
+### Fixed
+
+-   Better tab symbol to clarify keyboard shortcut and whitespace meaning.
+-   Improved contrast of delimiters and borders in dark mode.
+-   Correct typos in tutorial.
+-   Ensured type errors when a structure definition is given instead of a structure value.
+-   When generalizing a union type of function types, generalize their output types.
+-   Repaired structure of Korean locale.
+-   [#503](https://github.com/wordplaydev/wordplay/issues/503). Prevent infinite loops in parser.
+-   [#504](https://github.com/wordplaydev/wordplay/issues/504). Account for non-fixed-width characters in caret positioning.
+-   [#488](https://github.com/wordplaydev/wordplay/issues/488). Added animations off indicator on stage.
+-   [#500](https://github.com/wordplaydev/wordplay/issues/500). Improved explanation when there's a space between an evaluation's name and inputs.
+-   [#455](https://github.com/wordplaydev/wordplay/issues/455). Replaced `Bind`s with `Input`'s in `Evaluate` and table operations to prevent invalid bind metadata in evaluations.
+
+### Maintenance
+
+-   Upgraded to TypeScript 5.5.
+
 ## 0.10.1 2024-06-22
 
 ### Fixed
 
+-   [#104](https://github.com/wordplaydev/wordplay/issues/104). Created a standalone language reference.
 -   [#489](https://github.com/wordplaydev/wordplay/issues/489). Handled very large strings generated by text.
+-   [#490](https://github.com/wordplaydev/wordplay/issues/490). Allow curators to add projects to gallery.
+-   [#491](https://github.com/wordplaydev/wordplay/issues/491). Fixed tutorial content reactivity.
 
 ## 0.10.0 2024-06-15
 

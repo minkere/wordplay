@@ -11,7 +11,7 @@ import NumberLiteral from '@nodes/NumberLiteral';
 import NumberType from '@nodes/NumberType';
 import NameType from '@nodes/NameType';
 import NoneType from '@nodes/NoneType';
-import { toProgram } from './parseProgram';
+import parseProgram, { toProgram } from './parseProgram';
 import Program from '@nodes/Program';
 import StreamType from '@nodes/StreamType';
 import TableType from '@nodes/TableType';
@@ -70,6 +70,8 @@ import parseDoc from './parseDoc';
 import { parseBlock } from './parseExpression';
 import Otherwise from '@nodes/Otherwise';
 import getPreferredSpaces from './getPreferredSpaces';
+import Input from '@nodes/Input';
+import UnparsableExpression from '@nodes/UnparsableExpression';
 
 test('Parse programs', () => {
     expect(toProgram('')).toBeInstanceOf(Program);
@@ -93,6 +95,18 @@ test('Parse shares', () => {
     expect(good.expression).toBeInstanceOf(Block);
     expect((good.expression as Block).statements).toHaveLength(1);
     expect((good.expression as Block).statements[0]).toBeInstanceOf(Bind);
+});
+
+test('Unparsable runaways', () => {
+    const program = toProgram('a:\nb: [\n] 1');
+    expect(program.expression.statements.length).toBe(3);
+    expect(program.expression.statements[0]).toBeInstanceOf(Bind);
+    expect(program.expression.statements[1]).toBeInstanceOf(
+        UnparsableExpression,
+    );
+    expect(program.expression.statements[2]).toBeInstanceOf(
+        UnparsableExpression,
+    );
 });
 
 test.each([
@@ -176,7 +190,7 @@ test.each([
     ['ƒ⸨T⸩(a: T b: T) a + b', FunctionDefinition, 'types', TypeVariables],
     ['a()', Evaluate, 'fun', Reference, 'a'],
     ['a(1 2)', Evaluate, 'inputs', Array, 2],
-    ['a(b:2 c:2)', Evaluate, 'inputs', Array, Bind],
+    ['a(b:2 c:2)', Evaluate, 'inputs', Array, Input],
     ['a⸨Cat⸩(b c)', Evaluate, 'types', TypeInputs],
     ['a⸨Cat #⸩(b c)', Evaluate, 'types', TypeInputs],
     ["→ # '' meow()", ConversionDefinition, 'output', TextType],
@@ -355,4 +369,28 @@ test('docs in docs', () => {
     expect(doc.markup.paragraphs[0].segments[1]).toBeInstanceOf(Example);
     expect(doc.markup.paragraphs[0].segments[2]).toBeInstanceOf(Token);
     expect(doc.markup.paragraphs[0].segments.length).toBe(3);
+});
+
+test('unparsables in docs', () => {
+    const doc = parseDoc(
+        toTokens(
+            "``This is a broken example ina doc: \\∆\\. Don't you see it?``",
+        ),
+    );
+    expect(doc).toBeInstanceOf(Doc);
+    expect(doc.markup.paragraphs[0]).toBeInstanceOf(Paragraph);
+    expect(doc.markup.paragraphs[0].segments[0]).toBeInstanceOf(Token);
+    expect(doc.markup.paragraphs[0].segments[1]).toBeInstanceOf(Example);
+    expect(doc.markup.paragraphs[0].segments[2]).toBeInstanceOf(Token);
+    expect(doc.markup.paragraphs[0].segments.length).toBe(3);
+});
+
+test('unparsables in blocks', () => {
+    const program = parseProgram(toTokens('test: Phrase(\\\\)\ntest'));
+    expect(program).toBeInstanceOf(Program);
+    expect(program.expression).toBeInstanceOf(Block);
+    expect(program.expression.statements[0]).toBeInstanceOf(Bind);
+    expect(program.expression.statements[1]).toBeInstanceOf(
+        UnparsableExpression,
+    );
 });
